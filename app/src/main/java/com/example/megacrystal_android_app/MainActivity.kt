@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -19,6 +20,9 @@ import com.example.megacrystal_android_app.ui.screen.CustomerPaymentSuccessScree
 import com.example.megacrystal_android_app.ui.screen.CustomerProfileScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisLoadingScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisScanScreen
+import com.example.megacrystal_android_app.ui.screen.WorkerDashboardScreen
+import com.example.megacrystal_android_app.ui.screen.WorkerDetailScreen
+import com.example.megacrystal_android_app.ui.screen.demoWorkerOrders
 import com.example.megacrystal_android_app.ui.theme.MegacrystalandroidappTheme
 
 class MainActivity : ComponentActivity() {
@@ -30,6 +34,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             MegacrystalandroidappTheme {
                 var isAuthenticated by rememberSaveable { mutableStateOf(false) }
+                var isWorkerDemo by rememberSaveable { mutableStateOf(false) }
+                var selectedWorkerOrderId by rememberSaveable { mutableStateOf<String?>(null) }
+                var shippedWorkerOrders by remember { mutableStateOf(emptySet<String>()) }
                 var customerName by rememberSaveable { mutableStateOf("") }
                 var customerEmail by rememberSaveable { mutableStateOf("") }
                 var customerPhone by rememberSaveable { mutableStateOf("") }
@@ -49,6 +56,7 @@ class MainActivity : ComponentActivity() {
                         customerName = name
                         customerEmail = email
                         customerPhone = phone
+                        isWorkerDemo = email.equals("worker@megacrystal.demo", ignoreCase = true)
                         isAuthenticated = true
                     }
                 } else if (showProfile) {
@@ -56,6 +64,7 @@ class MainActivity : ComponentActivity() {
                         name = customerName,
                         email = customerEmail,
                         phone = customerPhone,
+                        roleLabel = if (isWorkerDemo) "PEKERJA GUDANG" else "PELANGGAN",
                         onBackClick = { showProfile = false },
                         onSaveClick = { name, email, phone ->
                             customerName = name
@@ -73,8 +82,25 @@ class MainActivity : ComponentActivity() {
                             customerName = ""
                             customerEmail = ""
                             customerPhone = ""
+                            selectedWorkerOrderId = null
+                            shippedWorkerOrders = emptySet()
+                            isWorkerDemo = false
                             isAuthenticated = false
                         }
+                    )
+                } else if (isWorkerDemo && selectedWorkerOrderId != null) {
+                    val order = demoWorkerOrders.firstOrNull { it.id == selectedWorkerOrderId }
+                        ?: demoWorkerOrders.first()
+                    WorkerDetailScreen(
+                        order = order,
+                        isShipped = order.id in shippedWorkerOrders,
+                        onBackClick = { selectedWorkerOrderId = null },
+                        onShipClick = { shippedWorkerOrders = shippedWorkerOrders + order.id }
+                    )
+                } else if (isWorkerDemo) {
+                    WorkerDashboardScreen(
+                        onProfileClick = { showProfile = true },
+                        onOrderClick = { selectedWorkerOrderId = it }
                     )
                 } else if (paymentResult == "success") {
                     CustomerPaymentSuccessScreen(

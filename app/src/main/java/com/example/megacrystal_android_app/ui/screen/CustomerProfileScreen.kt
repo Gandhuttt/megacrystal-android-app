@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -57,6 +57,7 @@ fun CustomerProfileScreen(
     name: String,
     email: String,
     phone: String,
+    roleLabel: String = "PELANGGAN",
     onBackClick: () -> Unit,
     onSaveClick: (String, String, String) -> Unit,
     onLogoutClick: () -> Unit
@@ -113,13 +114,13 @@ fun CustomerProfileScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 88.dp)
             ) {
                 Surface(
-                    modifier = Modifier.width(196.dp).height(32.dp),
+                    modifier = Modifier.widthIn(min = 196.dp).height(32.dp),
                     shape = RoundedCornerShape(8.dp),
                     color = Color(0xFFE7E7EF)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Status Role: PELANGGAN",
+                            text = "Status Role: $roleLabel",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFA0A0A8)

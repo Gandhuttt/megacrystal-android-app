@@ -150,6 +150,28 @@ fun CustomerAuthScreen(onContinue: (String, String, String) -> Unit) {
             ) {
                 Text("Masuk / Daftar")
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Demo Worker: masuk dengan email worker@megacrystal.demo\n(petunjuk ini akan dihapus setelah integrasi login)",
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = Color(0xFF49454F)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Section Admin belum dibuat (akan ditambahkan nanti)",
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = Color(0xFF49454F)
+            )
         }
     }
 }
