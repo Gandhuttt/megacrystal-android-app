@@ -1,6 +1,5 @@
 package com.example.megacrystal_android_app.ui.screen
 
-import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,10 +42,10 @@ private val PageBackground = Color(0xFFFAF8FF)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerHomeScreen(
+    onProfileClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onOrderClick: (Int) -> Unit
 ) {
-    val context = LocalContext.current
     Scaffold(
         containerColor = PageBackground,
         topBar = {
@@ -55,13 +53,7 @@ fun CustomerHomeScreen(
                 title = { Text("Beranda") },
                 actions = {
                     IconButton(
-                        onClick = {
-                            Toast.makeText(
-                                context,
-                                "Profil belum dibuat",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        onClick = onProfileClick
                     ) {
                         Image(
                             painter = painterResource(R.drawable.icon_profile),

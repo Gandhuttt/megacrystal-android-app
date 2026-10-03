@@ -16,6 +16,7 @@ import com.example.megacrystal_android_app.ui.screen.CustomerHomeScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerOrderScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerPaymentFailureScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerPaymentSuccessScreen
+import com.example.megacrystal_android_app.ui.screen.CustomerProfileScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisLoadingScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisScanScreen
 import com.example.megacrystal_android_app.ui.theme.MegacrystalandroidappTheme
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
                 var customerEmail by rememberSaveable { mutableStateOf("") }
                 var customerPhone by rememberSaveable { mutableStateOf("") }
                 var showHistory by rememberSaveable { mutableStateOf(false) }
+                var showProfile by rememberSaveable { mutableStateOf(false) }
                 var selectedProductKg by rememberSaveable { mutableStateOf<Int?>(null) }
                 var checkoutQuantity by rememberSaveable { mutableStateOf<Int?>(null) }
                 var isCreatingQris by rememberSaveable { mutableStateOf(false) }
@@ -49,6 +51,31 @@ class MainActivity : ComponentActivity() {
                         customerPhone = phone
                         isAuthenticated = true
                     }
+                } else if (showProfile) {
+                    CustomerProfileScreen(
+                        name = customerName,
+                        email = customerEmail,
+                        phone = customerPhone,
+                        onBackClick = { showProfile = false },
+                        onSaveClick = { name, email, phone ->
+                            customerName = name
+                            customerEmail = email
+                            customerPhone = phone
+                        },
+                        onLogoutClick = {
+                            showProfile = false
+                            showHistory = false
+                            selectedProductKg = null
+                            checkoutQuantity = null
+                            isCreatingQris = false
+                            isShowingQris = false
+                            paymentResult = null
+                            customerName = ""
+                            customerEmail = ""
+                            customerPhone = ""
+                            isAuthenticated = false
+                        }
+                    )
                 } else if (paymentResult == "success") {
                     CustomerPaymentSuccessScreen(
                         totalAmount = ((if (productKg == 8) 22_000 else 15_000) *
@@ -111,6 +138,7 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     CustomerHomeScreen(
+                        onProfileClick = { showProfile = true },
                         onHistoryClick = { showHistory = true },
                         onOrderClick = { selectedProductKg = it }
                     )
