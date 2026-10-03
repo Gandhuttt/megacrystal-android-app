@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.example.megacrystal_android_app.ui.screen.CustomerCheckoutScreen
+import com.example.megacrystal_android_app.ui.screen.CustomerAuthScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHistoryScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHomeScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerOrderScreen
@@ -27,6 +28,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MegacrystalandroidappTheme {
+                var isAuthenticated by rememberSaveable { mutableStateOf(false) }
+                var customerName by rememberSaveable { mutableStateOf("") }
+                var customerEmail by rememberSaveable { mutableStateOf("") }
+                var customerPhone by rememberSaveable { mutableStateOf("") }
                 var showHistory by rememberSaveable { mutableStateOf(false) }
                 var selectedProductKg by rememberSaveable { mutableStateOf<Int?>(null) }
                 var checkoutQuantity by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -37,7 +42,14 @@ class MainActivity : ComponentActivity() {
                 val productKg = selectedProductKg
                 val quantity = checkoutQuantity
 
-                if (paymentResult == "success") {
+                if (!isAuthenticated) {
+                    CustomerAuthScreen { name, email, phone ->
+                        customerName = name
+                        customerEmail = email
+                        customerPhone = phone
+                        isAuthenticated = true
+                    }
+                } else if (paymentResult == "success") {
                     CustomerPaymentSuccessScreen(
                         totalAmount = ((if (productKg == 8) 22_000 else 15_000) *
                             (quantity ?: 1)) + 10_000,
