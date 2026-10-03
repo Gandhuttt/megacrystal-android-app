@@ -3,6 +3,7 @@ package com.example.megacrystal_android_app.ui.screen
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -39,15 +40,23 @@ private val QrisBlue = Color(0xFF0066FF)
 private val QrisBackground = Color(0xFFFAF8FF)
 
 @Composable
-fun CustomerQrisScanScreen(onCancelClick: () -> Unit) {
+fun CustomerQrisScanScreen(
+    onDemoSuccessClick: (() -> Unit)?,
+    onCancelClick: () -> Unit,
+    onExpired: () -> Unit
+) {
     BackHandler(onBack = onCancelClick)
 
     val expiresAt = rememberSaveable { System.currentTimeMillis() + 299_000L }
     var secondsLeft by rememberSaveable { mutableLongStateOf(299L) }
     LaunchedEffect(expiresAt) {
-        while (secondsLeft > 0) {
-            secondsLeft = ((expiresAt - System.currentTimeMillis()) / 1000L)
+        while (true) {
+            secondsLeft = ((expiresAt - System.currentTimeMillis() + 999L) / 1000L)
                 .coerceAtLeast(0L)
+            if (secondsLeft == 0L) {
+                onExpired()
+                break
+            }
             delay(1000)
         }
     }
@@ -103,8 +112,20 @@ fun CustomerQrisScanScreen(onCancelClick: () -> Unit) {
                     ) {
                         Image(
                             painter = painterResource(R.drawable.qris_code_figma),
-                            contentDescription = "Contoh kode QRIS dari Figma",
-                            modifier = Modifier.size(171.dp)
+                            contentDescription = if (onDemoSuccessClick != null) {
+                                "Contoh kode QRIS, ketuk untuk demo berhasil"
+                            } else {
+                                "Contoh kode QRIS dari Figma"
+                            },
+                            modifier = Modifier
+                                .size(171.dp)
+                                .then(
+                                    if (onDemoSuccessClick != null) {
+                                        Modifier.clickable(onClick = onDemoSuccessClick)
+                                    } else {
+                                        Modifier
+                                    }
+                                )
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))

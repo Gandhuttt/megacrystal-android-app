@@ -1,6 +1,7 @@
 package com.example.megacrystal_android_app
 
 import android.os.Bundle
+import android.content.pm.ApplicationInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,6 +13,8 @@ import com.example.megacrystal_android_app.ui.screen.CustomerCheckoutScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHistoryScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHomeScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerOrderScreen
+import com.example.megacrystal_android_app.ui.screen.CustomerPaymentFailureScreen
+import com.example.megacrystal_android_app.ui.screen.CustomerPaymentSuccessScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisLoadingScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisScanScreen
 import com.example.megacrystal_android_app.ui.theme.MegacrystalandroidappTheme
@@ -20,6 +23,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val demoEnabled = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
         setContent {
             MegacrystalandroidappTheme {
@@ -28,16 +32,48 @@ class MainActivity : ComponentActivity() {
                 var checkoutQuantity by rememberSaveable { mutableStateOf<Int?>(null) }
                 var isCreatingQris by rememberSaveable { mutableStateOf(false) }
                 var isShowingQris by rememberSaveable { mutableStateOf(false) }
+                var paymentResult by rememberSaveable { mutableStateOf<String?>(null) }
 
                 val productKg = selectedProductKg
                 val quantity = checkoutQuantity
 
-                if (isShowingQris) {
-                    CustomerQrisScanScreen(
-                        onCancelClick = {
+                if (paymentResult == "success") {
+                    CustomerPaymentSuccessScreen(
+                        totalAmount = ((if (productKg == 8) 22_000 else 15_000) *
+                            (quantity ?: 1)) + 10_000,
+                        onHomeClick = {
+                            paymentResult = null
+                            isShowingQris = false
+                            isCreatingQris = false
+                            checkoutQuantity = null
+                            selectedProductKg = null
+                            showHistory = false
+                        }
+                    )
+                } else if (paymentResult == "failure") {
+                    CustomerPaymentFailureScreen(
+                        onRetryClick = {
+                            paymentResult = null
+                            isShowingQris = false
+                            isCreatingQris = true
+                        },
+                        onBackClick = {
+                            paymentResult = null
                             isShowingQris = false
                             isCreatingQris = false
                         }
+                    )
+                } else if (isShowingQris) {
+                    CustomerQrisScanScreen(
+                        onDemoSuccessClick = if (demoEnabled) {
+                            { paymentResult = "success" }
+                        } else {
+                            null
+                        },
+                        onCancelClick = {
+                            paymentResult = "failure"
+                        },
+                        onExpired = { paymentResult = "failure" }
                     )
                 } else if (isCreatingQris) {
                     CustomerQrisLoadingScreen(
