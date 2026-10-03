@@ -43,7 +43,7 @@ private val PageBackground = Color(0xFFFAF8FF)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomerHomeScreen() {
+fun CustomerHomeScreen(onHistoryClick: () -> Unit) {
     val context = LocalContext.current
     Scaffold(
         containerColor = PageBackground,
@@ -93,13 +93,7 @@ fun CustomerHomeScreen() {
 
                 NavigationBarItem(
                     selected = false,
-                    onClick = {
-                        Toast.makeText(
-                            context,
-                            "Riwayat belum dibuat",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
+                    onClick = onHistoryClick,
                     icon = {
                         Image(
                             painter = painterResource(R.drawable.icon_history),
