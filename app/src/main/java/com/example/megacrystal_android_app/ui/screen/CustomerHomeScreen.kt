@@ -43,7 +43,10 @@ private val PageBackground = Color(0xFFFAF8FF)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomerHomeScreen(onHistoryClick: () -> Unit) {
+fun CustomerHomeScreen(
+    onHistoryClick: () -> Unit,
+    onOrderClick: (Int) -> Unit
+) {
     val context = LocalContext.current
     Scaffold(
         containerColor = PageBackground,
@@ -150,6 +153,7 @@ fun CustomerHomeScreen(onHistoryClick: () -> Unit) {
                     stock = "Stok: 25 karung",
                     price = "Rp15.000",
                     imageRes = R.drawable.ice_crystal_5kg,
+                    onOrderClick = { onOrderClick(5) },
                     modifier = Modifier.weight(1f)
                 )
 
@@ -158,6 +162,7 @@ fun CustomerHomeScreen(onHistoryClick: () -> Unit) {
                     stock = "Stok: 15 karung",
                     price = "Rp22.000",
                     imageRes = R.drawable.ice_crystal_8kg,
+                    onOrderClick = { onOrderClick(8) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -171,10 +176,9 @@ private fun ProductCard(
     stock: String,
     price: String,
     @DrawableRes imageRes: Int,
+    onOrderClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-
     Card(
         modifier = modifier.height(294.dp),
         shape = RoundedCornerShape(16.dp),
@@ -223,9 +227,7 @@ private fun ProductCard(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = {
-                    Toast.makeText(context, "$name dipilih", Toast.LENGTH_SHORT).show()
-                },
+                onClick = onOrderClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp),
