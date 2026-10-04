@@ -9,6 +9,9 @@ import com.example.megacrystal_android_app.network.model.ProductsResponse
 import com.example.megacrystal_android_app.network.model.CreateOrderRequest
 import com.example.megacrystal_android_app.network.model.CreateOrderResponse
 import com.example.megacrystal_android_app.network.model.OrdersResponse
+import com.example.megacrystal_android_app.network.model.ConfirmPaymentRequest
+import com.example.megacrystal_android_app.network.model.ConfirmPaymentResponse
+import com.example.megacrystal_android_app.network.model.WorkerOrdersResponse
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -37,6 +40,17 @@ interface MegaCrystalApiInterface {
     suspend fun getOrders(
         @Header("Authorization") authorization: String
     ): OrdersResponse
+
+    @POST("api/payments/confirm")
+    suspend fun confirmPayment(
+        @Header("Authorization") authorization: String,
+        @Body request: ConfirmPaymentRequest
+    ): ConfirmPaymentResponse
+
+    @GET("api/worker/orders")
+    suspend fun getWorkerOrders(
+        @Header("Authorization") authorization: String
+    ): WorkerOrdersResponse
 }
 
 object MegaCrystalApiClient {
