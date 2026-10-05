@@ -27,7 +27,7 @@ Bisnis distribusi es kristal memiliki tantangan unik: produk mudah mencair dan p
 
 ## ✨ Fitur Utama
 
-Aplikasi CrystalFlow dibangun dalam satu sistem Android terpadu yang terbagi menjadi dua *role* (peran) utama dengan hak akses yang berbeda:
+Aplikasi MegaCrystal dibangun dalam satu sistem Android terpadu yang terbagi menjadi dua *role* (peran) utama dengan hak akses yang berbeda:
 
 ### 👤 Role Pelanggan (Customer)
 - **Katalog & Pemesanan:** Melihat ketersediaan stok aktual dan melakukan pemesanan es kristal secara mandiri dari *smartphone*.
