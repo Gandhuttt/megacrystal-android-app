@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.NavigationBar
@@ -28,19 +29,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.megacrystal_android_app.R
+import com.example.megacrystal_android_app.network.MegaCrystalApiClient
+import com.example.megacrystal_android_app.util.SessionManager
 
 private val HistoryBlue = Color(0xFF0066FF)
 private val HistoryBackground = Color(0xFFFAF8FF)
@@ -79,9 +85,59 @@ private val exampleOrders = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerHistoryScreen(onHomeClick: () -> Unit = {}) {
+    val context = LocalContext.current
+    val sessionManager = SessionManager(context)
     var dateSearch by rememberSaveable { mutableStateOf("") }
-    val shownOrders = exampleOrders.filter {
-        it.date.contains(dateSearch.trim(), ignoreCase = true)
+    var apiOrders by remember { mutableStateOf<List<HistoryOrder>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val token = sessionManager.getToken()
+        if (!token.isNullOrEmpty()) {
+            try {
+                val response = MegaCrystalApiClient.instance.getOrders("Bearer $token")
+                apiOrders = response.data.map { item ->
+                    val statusText = when (item.status.uppercase()) {
+                        "PENDING", "UNPAID" -> "Diproses"
+                        "PAID", "CONFIRMED" -> "Diproses"
+                        "SHIPPED", "ON_DELIVERY" -> "Sedang Dikirim"
+                        "COMPLETED", "DELIVERED" -> "Selesai"
+                        else -> item.status
+                    }
+                    val bg = when (statusText) {
+                        "Selesai" -> Color(0xFFDDF5E7)
+                        "Sedang Dikirim" -> Color(0xFFEAF2FF)
+                        else -> Color(0xFFFFF3CD)
+                    }
+                    val txtColor = when (statusText) {
+                        "Selesai" -> Color(0xFF16834A)
+                        "Sedang Dikirim" -> HistoryBlue
+                        else -> Color(0xFF856404)
+                    }
+                    HistoryOrder(
+                        number = item.orderNumber,
+                        status = statusText,
+                        date = item.placedAt.take(10),
+                        quantity = "Detail Pesanan",
+                        total = "Rp${String.format("%,d", item.totalAmount).replace(',', '.')}",
+                        statusBackground = bg,
+                        statusTextColor = txtColor
+                    )
+                }
+            } catch (e: Exception) {
+                // fallback
+            } finally {
+                isLoading = false
+            }
+        } else {
+            isLoading = false
+        }
+    }
+
+    val ordersToDisplay = if (apiOrders.isNotEmpty()) apiOrders else exampleOrders
+    val shownOrders = ordersToDisplay.filter {
+        it.date.contains(dateSearch.trim(), ignoreCase = true) ||
+                it.number.contains(dateSearch.trim(), ignoreCase = true)
     }
 
     Scaffold(
@@ -142,7 +198,7 @@ fun CustomerHistoryScreen(onHomeClick: () -> Unit = {}) {
                     onValueChange = { dateSearch = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
-                        Text("Cari berdasarkan Tanggal/Bulan/Tahun")
+                        Text("Cari tanggal / No. Pesanan")
                     },
                     leadingIcon = {
                         Box(
@@ -166,17 +222,26 @@ fun CustomerHistoryScreen(onHomeClick: () -> Unit = {}) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Riwayat Pembelian Minggu Ini",
+                    text = "Daftar Riwayat Pembelian",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF1D1B20)
                 )
             }
 
-            if (shownOrders.isEmpty()) {
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = HistoryBlue)
+                    }
+                }
+            } else if (shownOrders.isEmpty()) {
                 item {
                     Text(
-                        text = "Tidak ada pesanan pada tanggal tersebut.",
+                        text = "Tidak ada pesanan ditemukan.",
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 20.dp),

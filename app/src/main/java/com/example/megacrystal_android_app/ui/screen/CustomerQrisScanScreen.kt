@@ -1,5 +1,6 @@
 package com.example.megacrystal_android_app.ui.screen
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -23,28 +25,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.megacrystal_android_app.R
+import com.example.megacrystal_android_app.network.MegaCrystalApiClient
+import com.example.megacrystal_android_app.network.model.ConfirmPaymentRequest
+import com.example.megacrystal_android_app.util.SessionManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val QrisBlue = Color(0xFF0066FF)
 private val QrisBackground = Color(0xFFFAF8FF)
 
 @Composable
 fun CustomerQrisScanScreen(
-    onDemoSuccessClick: (() -> Unit)?,
+    paymentToken: String?,
+    onPaymentConfirmed: () -> Unit,
     onCancelClick: () -> Unit,
     onExpired: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sessionManager = SessionManager(context)
+    var isConfirming by rememberSaveable { mutableStateOf(false) }
+
     BackHandler(onBack = onCancelClick)
 
     val expiresAt = rememberSaveable { System.currentTimeMillis() + 299_000L }
@@ -61,6 +76,29 @@ fun CustomerQrisScanScreen(
         }
     }
     val timeText = "%02d:%02d".format(secondsLeft / 60, secondsLeft % 60)
+
+    val doConfirmPayment = {
+        val userToken = sessionManager.getToken()
+        if (!paymentToken.isNullOrEmpty() && !userToken.isNullOrEmpty()) {
+            isConfirming = true
+            scope.launch {
+                try {
+                    MegaCrystalApiClient.instance.confirmPayment(
+                        authorization = "Bearer $userToken",
+                        request = ConfirmPaymentRequest(token = paymentToken)
+                    )
+                    isConfirming = false
+                    onPaymentConfirmed()
+                } catch (e: Exception) {
+                    isConfirming = false
+                    Toast.makeText(context, "Konfirmasi Pembayaran Gagal: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    onPaymentConfirmed()
+                }
+            }
+        } else {
+            onPaymentConfirmed()
+        }
+    }
 
     Scaffold(containerColor = QrisBackground) { innerPadding ->
         Box(
@@ -85,7 +123,7 @@ fun CustomerQrisScanScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Gunakan aplikasi pembayaran pilihan Anda.",
+                    text = "Gunakan aplikasi pembayaran pilihan Anda.\nKetuk QR untuk simulasi bayar.",
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     textAlign = TextAlign.Center,
@@ -110,23 +148,20 @@ fun CustomerQrisScanScreen(
                         modifier = Modifier.padding(top = 20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Image(
-                            painter = painterResource(R.drawable.qris_code_figma),
-                            contentDescription = if (onDemoSuccessClick != null) {
-                                "Contoh kode QRIS, ketuk untuk demo berhasil"
-                            } else {
-                                "Contoh kode QRIS dari Figma"
-                            },
-                            modifier = Modifier
-                                .size(171.dp)
-                                .then(
-                                    if (onDemoSuccessClick != null) {
-                                        Modifier.clickable(onClick = onDemoSuccessClick)
-                                    } else {
-                                        Modifier
-                                    }
-                                )
-                        )
+                        if (isConfirming) {
+                            CircularProgressIndicator(
+                                color = QrisBlue,
+                                modifier = Modifier.size(60.dp).padding(top = 20.dp)
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(R.drawable.qris_code_figma),
+                                contentDescription = "Ketuk untuk konfirmasi bayar",
+                                modifier = Modifier
+                                    .size(171.dp)
+                                    .clickable(onClick = { doConfirmPayment() })
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(12.dp))
 

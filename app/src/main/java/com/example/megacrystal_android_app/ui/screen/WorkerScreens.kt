@@ -1,5 +1,6 @@
 package com.example.megacrystal_android_app.ui.screen
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,23 +22,36 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.megacrystal_android_app.R
+import com.example.megacrystal_android_app.network.MegaCrystalApiClient
+import com.example.megacrystal_android_app.network.model.ShipOrderRequest
+import com.example.megacrystal_android_app.util.SessionManager
+import kotlinx.coroutines.launch
 
 private val WorkerBackground = Color(0xFFFAF8FF)
 private val WorkerBlue = Color(0xFF0066FF)
@@ -77,6 +91,40 @@ fun WorkerDashboardScreen(
     onProfileClick: () -> Unit,
     onOrderClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    val sessionManager = SessionManager(context)
+    var ordersList by remember { mutableStateOf<List<WorkerOrder>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        val token = sessionManager.getToken()
+        if (!token.isNullOrEmpty()) {
+            try {
+                val response = MegaCrystalApiClient.instance.getWorkerOrders("Bearer $token")
+                ordersList = response.data.map { item ->
+                    WorkerOrder(
+                        id = item.id.toString(),
+                        customer = item.customerName,
+                        quantity = item.itemSummary,
+                        destination = item.shippingAddress,
+                        address = item.shippingAddress,
+                        recipient = item.recipientName,
+                        phone = "-",
+                        note = ""
+                    )
+                }
+            } catch (e: Exception) {
+                // fallback
+            } finally {
+                isLoading = false
+            }
+        } else {
+            isLoading = false
+        }
+    }
+
+    val displayOrders = if (ordersList.isNotEmpty()) ordersList else demoWorkerOrders
+
     Scaffold(
         containerColor = WorkerBackground,
         topBar = {
@@ -107,20 +155,30 @@ fun WorkerDashboardScreen(
             Spacer(Modifier.height(18.dp))
             Text("Antrian aktif", color = WorkerBlue, fontSize = 12.sp, lineHeight = 16.sp)
             Text(
-                "${demoWorkerOrders.size} pesanan",
+                "${displayOrders.size} pesanan",
                 color = WorkerText,
                 fontSize = 24.sp,
                 lineHeight = 28.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.height(12.dp))
-            demoWorkerOrders.forEachIndexed { index, order ->
-                WorkerOrderCard(
-                    order = order,
-                    highlighted = index == 0,
-                    onClick = { onOrderClick(order.id) }
-                )
-                Spacer(Modifier.height(12.dp))
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = WorkerBlue)
+                }
+            } else {
+                displayOrders.forEachIndexed { index, order ->
+                    WorkerOrderCard(
+                        order = order,
+                        highlighted = index == 0,
+                        onClick = { onOrderClick(order.id) }
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
             }
         }
     }
@@ -188,7 +246,38 @@ fun WorkerDetailScreen(
     onBackClick: () -> Unit,
     onShipClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sessionManager = SessionManager(context)
+    var isShipping by rememberSaveable { mutableStateOf(false) }
+
     BackHandler(onBack = onBackClick)
+
+    val handleShipOrder = {
+        val token = sessionManager.getToken()
+        val orderIntId = order.id.toIntOrNull()
+        if (!token.isNullOrEmpty() && orderIntId != null) {
+            isShipping = true
+            scope.launch {
+                try {
+                    MegaCrystalApiClient.instance.shipWorkerOrder(
+                        authorization = "Bearer $token",
+                        orderId = orderIntId,
+                        request = ShipOrderRequest(sealChecked = true, addressConfirmed = true)
+                    )
+                    isShipping = false
+                    Toast.makeText(context, "Pesanan Berhasil Dikirim!", Toast.LENGTH_SHORT).show()
+                    onShipClick()
+                } catch (e: Exception) {
+                    isShipping = false
+                    Toast.makeText(context, "Gagal mengubah status: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    onShipClick()
+                }
+            }
+        } else {
+            onShipClick()
+        }
+    }
 
     Scaffold(
         containerColor = WorkerBackground,
@@ -283,13 +372,17 @@ fun WorkerDetailScreen(
             ChecklistRow("Alamat sudah dikonfirmasi")
             Spacer(Modifier.height(28.dp))
             Button(
-                onClick = onShipClick,
-                enabled = !isShipped,
+                onClick = { handleShipOrder() },
+                enabled = !isShipped && !isShipping,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(containerColor = WorkerBlue)
             ) {
-                Text(if (isShipped) "Status: DIKIRIM" else "Ubah Status: DIKIRIM", fontSize = 14.sp)
+                if (isShipping) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text(if (isShipped) "Status: DIKIRIM" else "Ubah Status: DIKIRIM", fontSize = 14.sp)
+                }
             }
             Spacer(Modifier.height(24.dp))
         }
