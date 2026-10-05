@@ -2,48 +2,42 @@
 
 > **Distribusi Lancar, Es Tetap Segar.**
 > 
-> Proyek Aplikasi Mobile Terintegrasi untuk Manajemen Pemesanan dan Pengiriman Es Kristal dengan Integrasi Pembayaran Digital (QRIS).
+> Aplikasi Mobile untuk Pemesanan Es Kristal Mandiri dengan Integrasi Pembayaran Digital (QRIS).
 
 ![MegaCrystal Demo](demo-app.gif)
 
 ---
 
 ## 📌 Latar Belakang
-Bisnis distribusi es kristal memiliki tantangan unik: produk mudah mencair dan pelanggan (restoran, kafe, warung) membutuhkan pasokan yang cepat dan tepat. Selama ini, banyak distributor masih mengandalkan pencatatan manual via telepon atau aplikasi pesan instan. Sistem konvensional ini sering kali menyebabkan:
-- **Pesanan Terlewat/Salah Catat:** Akibat penumpukan pesan saat jam sibuk.
-- **Risiko *Fake Order* (Pesanan Fiktif):** Penggunaan sistem Cash on Delivery (COD) sering merugikan distributor ketika pesanan dibatalkan sepihak saat armada pengiriman sudah tiba di lokasi.
-- **Ketidakpastian Ketersediaan:** Pelanggan tidak mengetahui secara pasti apakah stok es di gudang sedang tersedia atau kosong.
+Bisnis distribusi es kristal memiliki tantangan unik: produk mudah mencair dan pelanggan (restoran, kafe, warung) membutuhkan pasokan yang cepat dan tepat. Selama ini, banyak pelanggan masih harus mengandalkan pencatatan manual via telepon atau pesan instan untuk melakukan pemesanan. Hal ini sering kali menyebabkan:
+- **Pesanan Terlewat/Salah Catat:** Akibat penumpukan antrean pesan saat jam sibuk.
+- **Ketidakpastian Ketersediaan:** Pelanggan tidak mengetahui secara pasti apakah stok es di gudang sedang tersedia atau kosong sebelum memesan.
+- **Risiko *Fake Order* (Pesanan Fiktif):** Penggunaan sistem bayar di tempat (COD) sering merugikan operasional bisnis ketika pesanan dibatalkan sepihak saat armada sudah berangkat.
 
-**MegaCrystal** hadir sebagai solusi digital untuk mengatasi masalah tersebut dengan menghubungkan pelanggan langsung ke sistem gudang, mewajibkan pembayaran di awal (QRIS) guna menghilangkan risiko kerugian finansial, dan mempercepat respons pengiriman melalui dasbor khusus pekerja logistik.
+**MegaCrystal** hadir sebagai aplikasi *mobile* yang memberdayakan pelanggan untuk mengecek stok secara transparan, memesan es kristal secara langsung, dan mewajibkan pembayaran di awal melalui QRIS guna memastikan kelancaran transaksi yang aman.
 
 ---
 
 ## 🎯 Tujuan Proyek
-1. Mengotomatisasi alur pemesanan es kristal agar prosesnya lebih cepat, transparan, dan terstruktur.
-2. Mengeliminasi kerugian finansial akibat pesanan fiktif (*fake order*) dengan menerapkan sistem pembayaran wajib via QRIS di awal transaksi.
-3. Memfasilitasi pekerja gudang dengan sistem pelacakan pesanan yang uangnya sudah tervalidasi masuk, sehingga mempercepat proses persiapan dan pengiriman barang.
+1. Mengotomatisasi alur pemesanan es kristal agar pelanggan dapat bertransaksi dengan lebih cepat, transparan, dan mandiri melalui perangkat *smartphone*.
+2. Memberikan informasi ketersediaan stok aktual (*real-time*) kepada pelanggan sebelum mereka melakukan transaksi pemesanan.
+3. Mengeliminasi kerugian finansial akibat pesanan fiktif (*fake order*) dengan menerapkan sistem pembayaran wajib via QRIS secara penuh.
 
 ---
 
 ## ✨ Fitur Utama
 
-Aplikasi MegaCrystal dibangun dalam satu sistem Android terpadu yang terbagi menjadi dua *role* (peran) utama dengan hak akses yang berbeda:
+Aplikasi MegaCrystal dirancang khusus untuk memfasilitasi kebutuhan pelanggan (Customer) dengan fitur-fitur interaktif berikut:
 
-### 👤 Role Pelanggan (Customer)
-- **Katalog & Pemesanan:** Melihat ketersediaan stok aktual dan melakukan pemesanan es kristal secara mandiri dari *smartphone*.
-- **Pembayaran Terintegrasi:** Melakukan *checkout* pesanan menggunakan metode pindai *Dynamic QRIS* untuk validasi pelunasan otomatis.
-- **Riwayat Transaksi:** Melacak status pesanan secara waktu nyata (misal: "Sedang Dikirim", "Selesai") dan melihat rekapitulasi pembelian sebelumnya.
-- **Manajemen Profil:** Memperbarui data diri (Nama, Email, No. HP, Password).
-
-### 👷 Role Pekerja Gudang (Worker)
-- **Dasbor Pengiriman:** Memantau antrean daftar pesanan masuk yang **sudah dibayar lunas** (sistem secara otomatis memblokir order bodong agar tidak muncul di layar pekerja).
-- **Detail Pesanan:** Melihat rincian alamat tujuan pengiriman dan membaca catatan khusus dari pembeli.
-- **Pembaruan Status Logistik:** Mengeksekusi tombol *action* cepat untuk mengubah status pesanan pelanggan menjadi "Dikirim" atau "Selesai".
+- **Katalog & Ketersediaan Stok:** Melihat jumlah ketersediaan stok aktual di gudang dan menginput pesanan es kristal secara mandiri.
+- **Pembayaran Terintegrasi (QRIS):** Melakukan *checkout* pesanan menggunakan metode pindai *Dynamic QRIS* untuk validasi pelunasan otomatis.
+- **Riwayat Transaksi:** Melacak pembaruan status pesanan (misal: "Menunggu Pembayaran", "Sedang Dikirim", "Selesai") dan melihat rekapitulasi riwayat pembelian sebelumnya.
+- **Manajemen Profil & Autentikasi:** Mendaftar akun baru, melakukan *login*, dan memperbarui data diri profil pengguna (Nama, Email, No. HP, Password).
 
 ---
 
 ## 🎨 Tautan Desain (Figma)
-Rancangan antarmuka pengguna (UI/UX) aplikasi ini disusun dengan mematuhi pedoman antarmuka Google Material 3 (M3). Anda dapat menjelajahi desainnya melalui tautan berikut:
+Rancangan antarmuka pengguna (UI/UX) aplikasi ini disusun dengan mematuhi pedoman antarmuka Google Material 3 (M3). Anda dapat menjelajahi purwarupa (*prototype*) interaktifnya melalui tautan berikut:
 👉 **[Figma Design: MegaCrystal](https://www.figma.com/design/v0F4guamuBNHOmDGs5JoW7/Design-MegaCrystal?node-id=0-1&t=XQLObxiNuyWAE8Ol-1)**
 
 ---
@@ -54,6 +48,6 @@ Proyek ini disusun dan dikembangkan oleh **Kelompok 4** untuk memenuhi tugas mat
 | Nama Lengkap | NIM | Peran Utama |
 | :--- | :--- | :--- |
 | Ahmad Fikri Zakaria | H1D024062 | Frontend Developer |
-| Muhammad Faqih Muhyiddin | H1D024068 | Backend Developer |
-| Gandhi Dhuta Nirvana | H1D024071 | API Integration |
+| Muhammad Faqih Muhyiddin | H1D024068 | API Integration |
+| Gandhi Dhuta Nirvana | H1D024071 | Backend Developer |
 | Nalendra Wicaksana | H1D024073 | UI/UX Designer |
