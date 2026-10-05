@@ -44,7 +44,7 @@ Aplikasi CrystalFlow dibangun dalam satu sistem Android terpadu yang terbagi men
 
 ## 🎨 Tautan Desain (Figma)
 Rancangan antarmuka pengguna (UI/UX) aplikasi ini disusun dengan mematuhi pedoman antarmuka Google Material 3 (M3). Anda dapat menjelajahi desainnya melalui tautan berikut:
-👉 **[Figma Design: MegaCrystal / CrystalFlow](https://www.figma.com/design/v0F4guamuBNHOmDGs5JoW7/Design-MegaCrystal?node-id=0-1&t=XQLObxiNuyWAE8Ol-1)**
+👉 **[Figma Design: MegaCrystal](https://www.figma.com/design/v0F4guamuBNHOmDGs5JoW7/Design-MegaCrystal?node-id=0-1&t=XQLObxiNuyWAE8Ol-1)**
 
 ---
 
