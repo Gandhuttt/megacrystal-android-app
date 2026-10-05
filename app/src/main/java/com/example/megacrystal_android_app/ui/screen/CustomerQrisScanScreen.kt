@@ -166,7 +166,7 @@ fun CustomerQrisScanScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
-                            text = "CRYSTALFLOW",
+                            text = "MEGACRYSTAL",
                             fontSize = 14.sp,
                             lineHeight = 20.sp,
                             color = Color(0xFF49454F)
