@@ -1,17 +1,17 @@
 package com.example.megacrystal_android_app
 
 import android.os.Bundle
-import android.content.pm.ApplicationInfo
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import com.example.megacrystal_android_app.ui.screen.CustomerCheckoutScreen
+import androidx.compose.ui.platform.LocalContext
 import com.example.megacrystal_android_app.ui.screen.CustomerAuthScreen
+import com.example.megacrystal_android_app.ui.screen.CustomerCheckoutScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHistoryScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHomeScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerOrderScreen
@@ -24,39 +24,50 @@ import com.example.megacrystal_android_app.ui.screen.WorkerDashboardScreen
 import com.example.megacrystal_android_app.ui.screen.WorkerDetailScreen
 import com.example.megacrystal_android_app.ui.screen.demoWorkerOrders
 import com.example.megacrystal_android_app.ui.theme.MegacrystalandroidappTheme
+import com.example.megacrystal_android_app.util.SessionManager
 
-class MainActivity : ComponentActivity() {
+class cMainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val demoEnabled = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
         setContent {
             MegacrystalandroidappTheme {
-                var isAuthenticated by rememberSaveable { mutableStateOf(false) }
-                var isWorkerDemo by rememberSaveable { mutableStateOf(false) }
+                val context = LocalContext.current
+                val sessionManager = remember { SessionManager(context) }
+
+                var isAuthenticated by rememberSaveable { mutableStateOf(sessionManager.isLoggedIn()) }
+                var isWorkerDemo by rememberSaveable { mutableStateOf(sessionManager.getUserRole()?.equals("WORKER", ignoreCase = true) == true || sessionManager.getUserEmail()?.equals("worker@megacrystal.demo", ignoreCase = true) == true) }
                 var selectedWorkerOrderId by rememberSaveable { mutableStateOf<String?>(null) }
                 var shippedWorkerOrders by remember { mutableStateOf(emptySet<String>()) }
-                var customerName by rememberSaveable { mutableStateOf("") }
-                var customerEmail by rememberSaveable { mutableStateOf("") }
-                var customerPhone by rememberSaveable { mutableStateOf("") }
+                var customerName by rememberSaveable { mutableStateOf(sessionManager.getUserName() ?: "") }
+                var customerEmail by rememberSaveable { mutableStateOf(sessionManager.getUserEmail() ?: "") }
+                var customerPhone by rememberSaveable { mutableStateOf(sessionManager.getUserPhone() ?: "") }
                 var showHistory by rememberSaveable { mutableStateOf(false) }
                 var showProfile by rememberSaveable { mutableStateOf(false) }
                 var selectedProductKg by rememberSaveable { mutableStateOf<Int?>(null) }
                 var checkoutQuantity by rememberSaveable { mutableStateOf<Int?>(null) }
                 var isCreatingQris by rememberSaveable { mutableStateOf(false) }
                 var isShowingQris by rememberSaveable { mutableStateOf(false) }
+                var activePaymentToken by rememberSaveable { mutableStateOf<String?>(null) }
                 var paymentResult by rememberSaveable { mutableStateOf<String?>(null) }
 
                 val productKg = selectedProductKg
                 val quantity = checkoutQuantity
 
                 if (!isAuthenticated) {
-                    CustomerAuthScreen { name, email, phone ->
-                        customerName = name
-                        customerEmail = email
+                    CustomerAuthScreen { token, user, phone ->
+                        sessionManager.saveSession(
+                            token = token,
+                            name = user.fullName,
+                            email = user.email,
+                            phone = phone,
+                            role = user.role
+                        )
+                        customerName = user.fullName
+                        customerEmail = user.email
                         customerPhone = phone
-                        isWorkerDemo = email.equals("worker@megacrystal.demo", ignoreCase = true)
+                        isWorkerDemo = user.role.equals("WORKER", ignoreCase = true) || user.email.equals("worker@megacrystal.demo", ignoreCase = true)
                         isAuthenticated = true
                     }
                 } else if (showProfile) {
@@ -70,14 +81,23 @@ class MainActivity : ComponentActivity() {
                             customerName = name
                             customerEmail = email
                             customerPhone = phone
+                            sessionManager.saveSession(
+                                token = sessionManager.getToken() ?: "",
+                                name = name,
+                                email = email,
+                                phone = phone,
+                                role = sessionManager.getUserRole() ?: "CUSTOMER"
+                            )
                         },
                         onLogoutClick = {
+                            sessionManager.clearSession()
                             showProfile = false
                             showHistory = false
                             selectedProductKg = null
                             checkoutQuantity = null
                             isCreatingQris = false
                             isShowingQris = false
+                            activePaymentToken = null
                             paymentResult = null
                             customerName = ""
                             customerEmail = ""
@@ -105,9 +125,10 @@ class MainActivity : ComponentActivity() {
                 } else if (paymentResult == "success") {
                     CustomerPaymentSuccessScreen(
                         totalAmount = ((if (productKg == 8) 22_000 else 15_000) *
-                            (quantity ?: 1)) + 10_000,
+                                (quantity ?: 1)) + 10_000,
                         onHomeClick = {
                             paymentResult = null
+                            activePaymentToken = null
                             isShowingQris = false
                             isCreatingQris = false
                             checkoutQuantity = null
@@ -124,16 +145,16 @@ class MainActivity : ComponentActivity() {
                         },
                         onBackClick = {
                             paymentResult = null
+                            activePaymentToken = null
                             isShowingQris = false
                             isCreatingQris = false
                         }
                     )
                 } else if (isShowingQris) {
                     CustomerQrisScanScreen(
-                        onDemoSuccessClick = if (demoEnabled) {
-                            { paymentResult = "success" }
-                        } else {
-                            null
+                        paymentToken = activePaymentToken,
+                        onPaymentConfirmed = {
+                            paymentResult = "success"
                         },
                         onCancelClick = {
                             paymentResult = "failure"
@@ -150,7 +171,11 @@ class MainActivity : ComponentActivity() {
                         weightKg = productKg,
                         quantity = quantity,
                         onBackClick = { checkoutQuantity = null },
-                        onPayClick = { isCreatingQris = true }
+                        onPaySuccess = { createOrderData ->
+                            activePaymentToken = createOrderData.payment.token
+                            isCreatingQris = false
+                            isShowingQris = true
+                        }
                     )
                 } else if (productKg != null) {
                     CustomerOrderScreen(
