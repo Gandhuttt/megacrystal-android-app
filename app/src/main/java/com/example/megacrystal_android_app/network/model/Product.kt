@@ -8,4 +8,4 @@ data class Product(
     val unitName: String,
     val unitPrice: Int,
     val availableStock: Int
-)
+) : java.io.Serializable

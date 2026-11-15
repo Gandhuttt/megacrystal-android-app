@@ -7,6 +7,7 @@ data class WorkerOrder(
     val recipientName: String,
     val shippingAddress: String,
     val totalAmount: Int,
-    val assignedAt: String,
-    val itemSummary: String
+    val assignedAt: String?,
+    val itemSummary: String,
+    val status: String
 )

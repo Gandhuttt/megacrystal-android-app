@@ -7,4 +7,4 @@ data class CreateOrderData(
     val deliveryFee: Int,
     val totalAmount: Int,
     val payment: OrderPayment
-)
+) : java.io.Serializable

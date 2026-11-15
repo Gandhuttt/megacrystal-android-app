@@ -3,6 +3,8 @@ package com.example.megacrystal_android_app.ui.screen
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,6 +47,7 @@ import com.example.megacrystal_android_app.network.model.CreateOrderData
 import com.example.megacrystal_android_app.network.model.CreateOrderRequest
 import com.example.megacrystal_android_app.network.model.OrderItemRequest
 import com.example.megacrystal_android_app.util.SessionManager
+import com.example.megacrystal_android_app.network.model.Product
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -62,7 +65,7 @@ private fun rupiah(amount: Int): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerCheckoutScreen(
-    weightKg: Int,
+    product: Product,
     quantity: Int,
     onBackClick: () -> Unit,
     onPaySuccess: (CreateOrderData) -> Unit
@@ -73,14 +76,12 @@ fun CustomerCheckoutScreen(
 
     var recipientName by rememberSaveable { mutableStateOf(sessionManager.getUserName() ?: "") }
     var recipientPhone by rememberSaveable { mutableStateOf(sessionManager.getUserPhone() ?: "") }
-    var shippingAddress by rememberSaveable { mutableStateOf("Jl. Contoh Raya No. 12, Jakarta") }
+    var shippingAddress by rememberSaveable { mutableStateOf("") }
+    var customerNote by rememberSaveable { mutableStateOf("") }
     var isLoading by rememberSaveable { mutableStateOf(false) }
 
-    val productId = if (weightKg == 8) 2 else 1
-    val unitPrice = if (weightKg == 8) 22_000 else 15_000
-    val subtotal = quantity * unitPrice
-    val deliveryFee = 10_000
-    val total = subtotal + deliveryFee
+    val unitPrice = product.unitPrice
+    val subtotal = quantity.toLong() * unitPrice
 
     BackHandler(onBack = onBackClick)
 
@@ -113,6 +114,7 @@ fun CustomerCheckoutScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
@@ -155,6 +157,16 @@ fun CustomerCheckoutScreen(
                 singleLine = true
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = customerNote,
+                onValueChange = { customerNote = it.take(2000) },
+                label = { Text("Keterangan") },
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 3
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Card(
@@ -171,13 +183,13 @@ fun CustomerCheckoutScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Es Kristal MegaCrystal ($weightKg Kg)",
+                        text = "${product.name} (${product.packageWeightGrams} g)",
                         fontSize = 16.sp,
                         lineHeight = 24.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "$quantity karung × ${rupiah(unitPrice)}",
+                        text = "$quantity ${product.unitName} × ${rupiah(unitPrice)}",
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                         color = Color(0xFF49454F)
@@ -187,18 +199,15 @@ fun CustomerCheckoutScreen(
                     HorizontalDivider(color = Color(0xFFCAC4D0))
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    CheckoutRow("Subtotal", rupiah(subtotal))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    CheckoutRow("Ongkir", rupiah(deliveryFee))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    CheckoutRow("Total Harga", rupiah(total), isTotal = true)
+                    CheckoutRow("Estimasi subtotal", "Rp${NumberFormat.getNumberInstance(Locale.forLanguageTag("id-ID")).format(subtotal)}")
+                    Text("Ongkir dan total final dihitung server setelah pesanan dibuat.")
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Pembayaran aman melalui QRIS. Kode berlaku 5 menit.",
+                text = "SIMULASI pembayaran, bukan QRIS bank. Total final dan waktu kedaluwarsa berasal dari server.",
                 fontSize = 12.sp,
                 lineHeight = 18.sp,
                 color = Color(0xFF49454F)
@@ -217,16 +226,21 @@ fun CustomerCheckoutScreen(
                         Toast.makeText(context, "Lengkapi data pengiriman", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
+                    if (quantity !in 1..product.availableStock) {
+                        Toast.makeText(context, "Jumlah melebihi stok tersedia", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
                     isLoading = true
                     scope.launch {
                         try {
                             val response = MegaCrystalApiClient.instance.createOrder(
                                 authorization = "Bearer $token",
                                 request = CreateOrderRequest(
-                                    items = listOf(OrderItemRequest(productId = productId, quantity = quantity)),
+                                    items = listOf(OrderItemRequest(productId = product.id, quantity = quantity)),
                                     recipientName = recipientName.trim(),
                                     recipientPhone = recipientPhone.trim(),
-                                    shippingAddress = shippingAddress.trim()
+                                    shippingAddress = shippingAddress.trim(),
+                                    customerNote = customerNote.trim().takeIf { it.isNotEmpty() }
                                 )
                             )
                             isLoading = false
@@ -248,7 +262,7 @@ fun CustomerCheckoutScreen(
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Bayar QRIS")
+                    Text("Buat pesanan • SIMULASI")
                 }
             }
         }

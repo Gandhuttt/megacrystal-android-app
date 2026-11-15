@@ -15,6 +15,9 @@ import com.example.megacrystal_android_app.network.model.WorkerOrdersResponse
 import com.example.megacrystal_android_app.network.model.WorkerOrderDetailResponse
 import com.example.megacrystal_android_app.network.model.ShipOrderRequest
 import com.example.megacrystal_android_app.network.model.ShipOrderResponse
+import com.example.megacrystal_android_app.network.model.ProfileResponse
+import com.example.megacrystal_android_app.network.model.ProfileUpdateRequest
+import retrofit2.http.PATCH
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -67,6 +70,29 @@ interface MegaCrystalApiInterface {
         @Header("Authorization") authorization: String,
         @Path("id") orderId: Int,
         @Body request: ShipOrderRequest
+    ): ShipOrderResponse
+
+    @GET("api/profile")
+    suspend fun getProfile(@Header("Authorization") authorization: String): ProfileResponse
+
+    @PATCH("api/profile")
+    suspend fun updateProfile(
+        @Header("Authorization") authorization: String,
+        @Body request: ProfileUpdateRequest
+    ): ProfileResponse
+
+    @POST("api/worker/orders/{id}/assign")
+    suspend fun assignWorkerOrder(
+        @Header("Authorization") authorization: String,
+        @Path("id") orderId: Int,
+        @Body request: Map<String, Int> = emptyMap()
+    ): ShipOrderResponse
+
+    @POST("api/worker/orders/{id}/complete")
+    suspend fun completeWorkerOrder(
+        @Header("Authorization") authorization: String,
+        @Path("id") orderId: Int,
+        @Body request: Map<String, String> = emptyMap()
     ): ShipOrderResponse
 }
 

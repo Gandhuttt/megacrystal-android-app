@@ -4,6 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.example.megacrystal_android_app.network.model.Product
+import com.example.megacrystal_android_app.network.model.CreateOrderData
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,18 +23,15 @@ import com.example.megacrystal_android_app.ui.screen.CustomerCheckoutScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHistoryScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerHomeScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerOrderScreen
-import com.example.megacrystal_android_app.ui.screen.CustomerPaymentFailureScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerPaymentSuccessScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerProfileScreen
-import com.example.megacrystal_android_app.ui.screen.CustomerQrisLoadingScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisScanScreen
 import com.example.megacrystal_android_app.ui.screen.WorkerDashboardScreen
 import com.example.megacrystal_android_app.ui.screen.WorkerDetailScreen
-import com.example.megacrystal_android_app.ui.screen.demoWorkerOrders
 import com.example.megacrystal_android_app.ui.theme.MegacrystalandroidappTheme
 import com.example.megacrystal_android_app.util.SessionManager
 
-class cMainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -37,22 +42,19 @@ class cMainActivity : ComponentActivity() {
                 val sessionManager = remember { SessionManager(context) }
 
                 var isAuthenticated by rememberSaveable { mutableStateOf(sessionManager.isLoggedIn()) }
-                var isWorkerDemo by rememberSaveable { mutableStateOf(sessionManager.getUserRole()?.equals("WORKER", ignoreCase = true) == true || sessionManager.getUserEmail()?.equals("worker@megacrystal.demo", ignoreCase = true) == true) }
-                var selectedWorkerOrderId by rememberSaveable { mutableStateOf<String?>(null) }
-                var shippedWorkerOrders by remember { mutableStateOf(emptySet<String>()) }
+                var userRole by rememberSaveable { mutableStateOf(sessionManager.getUserRole() ?: "CUSTOMER") }
+                var selectedWorkerOrderId by rememberSaveable { mutableStateOf<Int?>(null) }
                 var customerName by rememberSaveable { mutableStateOf(sessionManager.getUserName() ?: "") }
                 var customerEmail by rememberSaveable { mutableStateOf(sessionManager.getUserEmail() ?: "") }
                 var customerPhone by rememberSaveable { mutableStateOf(sessionManager.getUserPhone() ?: "") }
                 var showHistory by rememberSaveable { mutableStateOf(false) }
                 var showProfile by rememberSaveable { mutableStateOf(false) }
-                var selectedProductKg by rememberSaveable { mutableStateOf<Int?>(null) }
+                var selectedProduct by rememberSaveable { mutableStateOf<Product?>(null) }
                 var checkoutQuantity by rememberSaveable { mutableStateOf<Int?>(null) }
-                var isCreatingQris by rememberSaveable { mutableStateOf(false) }
-                var isShowingQris by rememberSaveable { mutableStateOf(false) }
-                var activePaymentToken by rememberSaveable { mutableStateOf<String?>(null) }
+                var activeOrder by rememberSaveable { mutableStateOf<CreateOrderData?>(null) }
                 var paymentResult by rememberSaveable { mutableStateOf<String?>(null) }
 
-                val productKg = selectedProductKg
+                val product = selectedProduct
                 val quantity = checkoutQuantity
 
                 if (!isAuthenticated) {
@@ -67,7 +69,7 @@ class cMainActivity : ComponentActivity() {
                         customerName = user.fullName
                         customerEmail = user.email
                         customerPhone = phone
-                        isWorkerDemo = user.role.equals("WORKER", ignoreCase = true) || user.email.equals("worker@megacrystal.demo", ignoreCase = true)
+                        userRole = user.role
                         isAuthenticated = true
                     }
                 } else if (showProfile) {
@@ -75,112 +77,93 @@ class cMainActivity : ComponentActivity() {
                         name = customerName,
                         email = customerEmail,
                         phone = customerPhone,
-                        roleLabel = if (isWorkerDemo) "PEKERJA GUDANG" else "PELANGGAN",
+                        roleLabel = userRole,
                         onBackClick = { showProfile = false },
                         onSaveClick = { name, email, phone ->
                             customerName = name
                             customerEmail = email
                             customerPhone = phone
-                            sessionManager.saveSession(
-                                token = sessionManager.getToken() ?: "",
-                                name = name,
-                                email = email,
-                                phone = phone,
-                                role = sessionManager.getUserRole() ?: "CUSTOMER"
-                            )
+                            userRole = sessionManager.getUserRole() ?: userRole
                         },
                         onLogoutClick = {
                             sessionManager.clearSession()
                             showProfile = false
                             showHistory = false
-                            selectedProductKg = null
+                            selectedProduct = null
                             checkoutQuantity = null
-                            isCreatingQris = false
-                            isShowingQris = false
-                            activePaymentToken = null
+                            activeOrder = null
                             paymentResult = null
                             customerName = ""
                             customerEmail = ""
                             customerPhone = ""
                             selectedWorkerOrderId = null
-                            shippedWorkerOrders = emptySet()
-                            isWorkerDemo = false
+                            userRole = "CUSTOMER"
                             isAuthenticated = false
                         }
                     )
-                } else if (isWorkerDemo && selectedWorkerOrderId != null) {
-                    val order = demoWorkerOrders.firstOrNull { it.id == selectedWorkerOrderId }
-                        ?: demoWorkerOrders.first()
+                } else if (userRole.equals("WORKER", ignoreCase = true) && selectedWorkerOrderId != null) {
                     WorkerDetailScreen(
-                        order = order,
-                        isShipped = order.id in shippedWorkerOrders,
-                        onBackClick = { selectedWorkerOrderId = null },
-                        onShipClick = { shippedWorkerOrders = shippedWorkerOrders + order.id }
+                        orderId = selectedWorkerOrderId!!,
+                        onBackClick = { selectedWorkerOrderId = null }
                     )
-                } else if (isWorkerDemo) {
+                } else if (userRole.equals("WORKER", ignoreCase = true)) {
                     WorkerDashboardScreen(
                         onProfileClick = { showProfile = true },
                         onOrderClick = { selectedWorkerOrderId = it }
                     )
+                } else if (!userRole.equals("CUSTOMER", ignoreCase = true)) {
+                    Column(Modifier.padding(horizontal = 24.dp, vertical = 64.dp)) {
+                        Text("Akun $userRole")
+                        Text("Pengelolaan admin tersedia di dashboard web MegaCrystal. Akun admin tidak digunakan untuk pemesanan pelanggan.")
+                        Button(onClick = { showProfile = true }) { Text("Profil / Keluar") }
+                    }
                 } else if (paymentResult == "success") {
                     CustomerPaymentSuccessScreen(
-                        totalAmount = ((if (productKg == 8) 22_000 else 15_000) *
-                                (quantity ?: 1)) + 10_000,
+                        totalAmount = activeOrder?.totalAmount ?: 0,
                         onHomeClick = {
                             paymentResult = null
-                            activePaymentToken = null
-                            isShowingQris = false
-                            isCreatingQris = false
+                            activeOrder = null
                             checkoutQuantity = null
-                            selectedProductKg = null
+                            selectedProduct = null
                             showHistory = false
                         }
                     )
-                } else if (paymentResult == "failure") {
-                    CustomerPaymentFailureScreen(
-                        onRetryClick = {
-                            paymentResult = null
-                            isShowingQris = false
-                            isCreatingQris = true
-                        },
-                        onBackClick = {
-                            paymentResult = null
-                            activePaymentToken = null
-                            isShowingQris = false
-                            isCreatingQris = false
-                        }
-                    )
-                } else if (isShowingQris) {
-                    CustomerQrisScanScreen(
-                        paymentToken = activePaymentToken,
-                        onPaymentConfirmed = {
-                            paymentResult = "success"
-                        },
-                        onCancelClick = {
-                            paymentResult = "failure"
-                        },
-                        onExpired = { paymentResult = "failure" }
-                    )
-                } else if (isCreatingQris) {
-                    CustomerQrisLoadingScreen(
-                        onBackClick = { isCreatingQris = false },
-                        onFinished = { isShowingQris = true }
-                    )
-                } else if (productKg != null && quantity != null) {
+                } else if (activeOrder != null) {
+                    val order = activeOrder!!
+                    Column {
+                        Text("Pesanan ${order.orderNumber}", modifier = Modifier.padding(top = 32.dp, start = 20.dp))
+                        Text("Subtotal Rp${order.subtotalAmount} • Ongkir Rp${order.deliveryFee} • Total Rp${order.totalAmount}", modifier = Modifier.padding(horizontal = 20.dp))
+                        CustomerQrisScanScreen(
+                            paymentToken = order.payment.token,
+                            expiresAt = order.payment.expiresAt,
+                            onPaymentConfirmed = { paymentResult = "success" },
+                            onCancelClick = {
+                                activeOrder = null
+                                checkoutQuantity = null
+                                selectedProduct = null
+                                showHistory = true
+                            },
+                            onExpired = {
+                                activeOrder = null
+                                checkoutQuantity = null
+                                selectedProduct = null
+                                showHistory = true
+                            }
+                        )
+                    }
+                } else if (product != null && quantity != null) {
                     CustomerCheckoutScreen(
-                        weightKg = productKg,
+                        product = product,
                         quantity = quantity,
                         onBackClick = { checkoutQuantity = null },
                         onPaySuccess = { createOrderData ->
-                            activePaymentToken = createOrderData.payment.token
-                            isCreatingQris = false
-                            isShowingQris = true
+                            activeOrder = createOrderData
                         }
                     )
-                } else if (productKg != null) {
+                } else if (product != null) {
                     CustomerOrderScreen(
-                        weightKg = productKg,
-                        onBackClick = { selectedProductKg = null },
+                        product = product,
+                        onBackClick = { selectedProduct = null },
                         onCheckoutClick = { checkoutQuantity = it }
                     )
                 } else if (showHistory) {
@@ -191,7 +174,7 @@ class cMainActivity : ComponentActivity() {
                     CustomerHomeScreen(
                         onProfileClick = { showProfile = true },
                         onHistoryClick = { showHistory = true },
-                        onOrderClick = { selectedProductKg = it }
+                        onOrderClick = { selectedProduct = it }
                     )
                 }
             }

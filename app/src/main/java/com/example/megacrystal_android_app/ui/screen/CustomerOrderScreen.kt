@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.megacrystal_android_app.R
+import com.example.megacrystal_android_app.network.model.Product
 
 private val OrderBlue = Color(0xFF0066FF)
 private val OrderBackground = Color(0xFFFAF8FF)
@@ -43,15 +44,15 @@ private val OrderBackground = Color(0xFFFAF8FF)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerOrderScreen(
-    weightKg: Int = 5,
+    product: Product,
     onBackClick: () -> Unit = {},
     onCheckoutClick: (Int) -> Unit = {}
 ) {
-    val stock = if (weightKg == 8) 15 else 25
-    val price = if (weightKg == 8) "Rp22.000" else "Rp15.000"
+    val stock = product.availableStock
+    val price = "Rp${String.format("%,d", product.unitPrice).replace(',', '.')}"
 
-    var quantityText by rememberSaveable(weightKg) {
-        mutableStateOf("3")
+    var quantityText by rememberSaveable(product.id) {
+        mutableStateOf("1")
     }
     val quantity = quantityText.toIntOrNull()
 
@@ -127,13 +128,13 @@ fun CustomerOrderScreen(
             ) {
                 Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                     Text(
-                        text = "Stok: $stock karung",
+                        text = "Stok: $stock ${product.unitName}",
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         color = Color(0xFF49454F)
                     )
                     Text(
-                        text = "Es kristal • $weightKg kg per karung",
+                        text = "${product.name} • ${product.packageWeightGrams} g per ${product.unitName}",
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                         fontWeight = FontWeight.Normal,
@@ -147,10 +148,10 @@ fun CustomerOrderScreen(
             OutlinedTextField(
                 value = quantityText,
                 onValueChange = { input ->
-                    quantityText = input.filter { it.isDigit() }.take(3)
+                    quantityText = input.filter { it.isDigit() }.take(9)
                 },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Jml Karung") },
+                label = { Text("Jumlah ${product.unitName}") },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number
                 ),
@@ -161,7 +162,7 @@ fun CustomerOrderScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "$price per karung • minimum 1 karung",
+                text = "$price per ${product.unitName} • minimum 1",
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 color = Color(0xFF49454F)

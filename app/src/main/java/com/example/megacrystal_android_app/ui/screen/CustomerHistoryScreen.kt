@@ -26,6 +26,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.megacrystal_android_app.R
 import com.example.megacrystal_android_app.network.MegaCrystalApiClient
 import com.example.megacrystal_android_app.util.SessionManager
+import kotlinx.coroutines.CancellationException
 
 private val HistoryBlue = Color(0xFF0066FF)
 private val HistoryBackground = Color(0xFFFAF8FF)
@@ -55,87 +57,88 @@ private data class HistoryOrder(
     val number: String,
     val status: String,
     val date: String,
-    val quantity: String,
+    val paymentStatus: String,
     val total: String,
     val statusBackground: Color,
     val statusTextColor: Color
 )
 
-private val exampleOrders = listOf(
-    HistoryOrder(
-        number = "MC-240929-018",
-        status = "Sedang Dikirim",
-        date = "29 Sep 2026",
-        quantity = "1 karung 5 kg, 4 karung 8 kg",
-        total = "Rp81.000",
-        statusBackground = Color(0xFFEAF2FF),
-        statusTextColor = HistoryBlue
-    ),
-    HistoryOrder(
-        number = "MC-240921-012",
-        status = "Selesai",
-        date = "21 Sep 2026",
-        quantity = "3 karung 5 kg",
-        total = "Rp45.000",
-        statusBackground = Color(0xFFDDF5E7),
-        statusTextColor = Color(0xFF16834A)
-    )
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerHistoryScreen(onHomeClick: () -> Unit = {}) {
     val context = LocalContext.current
-    val sessionManager = SessionManager(context)
+    val sessionManager = remember(context) { SessionManager(context) }
     var dateSearch by rememberSaveable { mutableStateOf("") }
     var apiOrders by remember { mutableStateOf<List<HistoryOrder>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
+    var loadError by remember { mutableStateOf<String?>(null) }
+    var retryCount by remember { mutableStateOf(0) }
+
+    LaunchedEffect(retryCount) {
+        isLoading = true
+        loadError = null
         val token = sessionManager.getToken()
-        if (!token.isNullOrEmpty()) {
+        if (!token.isNullOrBlank()) {
             try {
                 val response = MegaCrystalApiClient.instance.getOrders("Bearer $token")
                 apiOrders = response.data.map { item ->
-                    val statusText = when (item.status.uppercase()) {
-                        "PENDING", "UNPAID" -> "Diproses"
-                        "PAID", "CONFIRMED" -> "Diproses"
-                        "SHIPPED", "ON_DELIVERY" -> "Sedang Dikirim"
-                        "COMPLETED", "DELIVERED" -> "Selesai"
+                    val statusText = when (item.status.lowercase()) {
+                        "pending" -> "Menunggu Pembayaran"
+                        "unpaid" -> "Belum Dibayar"
+                        "paid" -> "Dibayar"
+                        "confirmed" -> "Dikonfirmasi"
+                        "assigned" -> "Kurir Ditugaskan"
+                        "shipped", "on_delivery" -> "Sedang Dikirim"
+                        "delivered" -> "Terkirim"
+                        "completed" -> "Selesai"
+                        "cancelled", "canceled" -> "Dibatalkan"
+                        "expired" -> "Kedaluwarsa"
                         else -> item.status
                     }
-                    val bg = when (statusText) {
-                        "Selesai" -> Color(0xFFDDF5E7)
-                        "Sedang Dikirim" -> Color(0xFFEAF2FF)
+                    val bg = when (item.status.lowercase()) {
+                        "delivered", "completed" -> Color(0xFFDDF5E7)
+                        "paid", "confirmed", "assigned", "shipped", "on_delivery" -> Color(0xFFEAF2FF)
                         else -> Color(0xFFFFF3CD)
                     }
-                    val txtColor = when (statusText) {
-                        "Selesai" -> Color(0xFF16834A)
-                        "Sedang Dikirim" -> HistoryBlue
+                    val txtColor = when (item.status.lowercase()) {
+                        "delivered", "completed" -> Color(0xFF16834A)
+                        "paid", "confirmed", "assigned", "shipped", "on_delivery" -> HistoryBlue
                         else -> Color(0xFF856404)
                     }
                     HistoryOrder(
                         number = item.orderNumber,
                         status = statusText,
                         date = item.placedAt.take(10),
-                        quantity = "Detail Pesanan",
+                        paymentStatus = when (item.paymentStatus?.lowercase()) {
+                            "paid" -> "Dibayar"
+                            "pending" -> "Menunggu Pembayaran"
+                            "unpaid" -> "Belum Dibayar"
+                            "expired" -> "Kedaluwarsa"
+                            "cancelled", "canceled" -> "Dibatalkan"
+                            null -> "Tidak tersedia"
+                            else -> item.paymentStatus.orEmpty()
+                        },
                         total = "Rp${String.format("%,d", item.totalAmount).replace(',', '.')}",
                         statusBackground = bg,
                         statusTextColor = txtColor
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                // fallback
+                loadError = "Gagal memuat riwayat. Periksa koneksi dan coba lagi."
             } finally {
                 isLoading = false
             }
         } else {
+            loadError = "Sesi tidak tersedia. Silakan masuk kembali."
             isLoading = false
         }
     }
 
-    val ordersToDisplay = if (apiOrders.isNotEmpty()) apiOrders else exampleOrders
-    val shownOrders = ordersToDisplay.filter {
+    val shownOrders = apiOrders.filter {
         it.date.contains(dateSearch.trim(), ignoreCase = true) ||
                 it.number.contains(dateSearch.trim(), ignoreCase = true)
     }
@@ -238,6 +241,22 @@ fun CustomerHistoryScreen(onHomeClick: () -> Unit = {}) {
                         CircularProgressIndicator(color = HistoryBlue)
                     }
                 }
+            } else if (loadError != null) {
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = loadError.orEmpty(),
+                            textAlign = TextAlign.Center,
+                            color = Color(0xFFB3261E)
+                        )
+                        TextButton(onClick = { retryCount++ }) {
+                            Text("Coba Lagi")
+                        }
+                    }
+                }
             } else if (shownOrders.isEmpty()) {
                 item {
                     Text(
@@ -308,7 +327,7 @@ private fun HistoryOrderCard(order: HistoryOrder) {
 
             HistoryDetailRow("Tgl", order.date)
             Spacer(modifier = Modifier.height(6.dp))
-            HistoryDetailRow("Jml Karung", order.quantity)
+            HistoryDetailRow("Pembayaran", order.paymentStatus)
             Spacer(modifier = Modifier.height(6.dp))
             HistoryDetailRow("Total Harga", order.total, isPrice = true)
         }
