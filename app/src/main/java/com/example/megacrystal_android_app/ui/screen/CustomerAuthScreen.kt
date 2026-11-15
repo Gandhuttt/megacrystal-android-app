@@ -60,7 +60,7 @@ private fun parseHttpError(e: Throwable): String {
             try {
                 val json = JSONObject(errorBody)
                 if (json.has("message")) return json.getString("message")
-                if (json.has("error")) return json.getString("error")
+                if (json.has("error")) return json.optJSONObject("error")?.optString("message") ?: json.getString("error")
                 return errorBody
             } catch (_: Exception) {
                 return errorBody
@@ -217,7 +217,7 @@ fun CustomerAuthScreen(onAuthSuccess: (token: String, user: AuthUser, phone: Str
                                     onAuthSuccess(
                                         loginResponse.data.accessToken,
                                         loginResponse.data.user,
-                                        phone.ifBlank { "08123456789" }
+                                        loginResponse.data.user.phoneNumber.orEmpty()
                                     )
                                 } catch (e: Exception) {
                                     isLoading = false
@@ -294,16 +294,6 @@ fun CustomerAuthScreen(onAuthSuccess: (token: String, user: AuthUser, phone: Str
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Demo Worker: masuk tab Masuk dengan email worker@megacrystal.demo",
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = Color(0xFF49454F)
-            )
         }
     }
 }

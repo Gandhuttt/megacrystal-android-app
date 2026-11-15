@@ -61,14 +61,14 @@ fun CustomerPaymentSuccessScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.payment_success_figma),
-                    contentDescription = "Pembayaran berhasil",
+                    contentDescription = "Pembayaran simulasi berhasil",
                     modifier = Modifier.size(96.dp)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Berhasil!",
+                    text = "Simulasi Berhasil!",
                     fontSize = 26.sp,
                     lineHeight = 32.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -78,7 +78,7 @@ fun CustomerPaymentSuccessScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Pesanan segera dikirim.",
+                    text = "Ini simulasi pembayaran, bukan transaksi QRIS asli.",
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     color = Color(0xFF49454F)
@@ -87,7 +87,7 @@ fun CustomerPaymentSuccessScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Pembayaran Rp$formattedAmount terkonfirmasi.",
+                    text = "Pembayaran simulasi Rp$formattedAmount terkonfirmasi oleh server.",
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     textAlign = TextAlign.Center,
@@ -130,14 +130,14 @@ fun CustomerPaymentFailureScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.payment_failure_figma),
-                    contentDescription = "Pembayaran gagal",
+                    contentDescription = "Pembayaran simulasi gagal",
                     modifier = Modifier.size(96.dp)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Gagal",
+                    text = "Simulasi Tidak Selesai",
                     fontSize = 26.sp,
                     lineHeight = 32.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -147,7 +147,7 @@ fun CustomerPaymentFailureScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Waktu habis/Dibatalkan.",
+                    text = "Pembayaran simulasi kedaluwarsa atau dibatalkan.",
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                     color = Color(0xFF49454F)

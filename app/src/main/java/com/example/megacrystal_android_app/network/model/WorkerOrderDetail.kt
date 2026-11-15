@@ -7,7 +7,7 @@ data class WorkerOrderDetail(
     val recipientName: String,
     val recipientPhone: String,
     val shippingAddress: String,
-    val customerNote: String,
+    val customerNote: String?,
     val totalAmount: Int,
     val items: List<WorkerOrderItem>
 )

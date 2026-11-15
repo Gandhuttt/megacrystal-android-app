@@ -4,6 +4,8 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,17 +55,20 @@ private val PageBackground = Color(0xFFFAF8FF)
 fun CustomerHomeScreen(
     onProfileClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onOrderClick: (Int) -> Unit
+    onOrderClick: (Product) -> Unit
 ) {
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var refresh by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refresh) {
+        isLoading = true
+        error = null
         try {
-            val response = MegaCrystalApiClient.instance.getProducts()
-            products = response.data
+            products = MegaCrystalApiClient.instance.getProducts().data
         } catch (e: Exception) {
-            // fallback if network fails
+            error = "Gagal memuat katalog. Periksa koneksi lalu coba lagi."
         } finally {
             isLoading = false
         }
@@ -131,6 +136,7 @@ fun CustomerHomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 18.dp)
         ) {
             Text(
@@ -146,7 +152,7 @@ fun CustomerHomeScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Dibuat dari air tersaring dan siap dikirim dari gudang terdekat.",
+                text = "Pilih produk dan jumlah dari katalog MegaCrystal.",
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 color = Color(0xFF49454F)
@@ -170,40 +176,24 @@ fun CustomerHomeScreen(
                 ) {
                     CircularProgressIndicator(color = Blue)
                 }
-            } else if (products.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    products.forEach { prod ->
-                        val weightKg = if (prod.packageWeightGrams >= 1000) prod.packageWeightGrams / 1000 else prod.packageWeightGrams
-                        val imgRes = if (weightKg == 8) R.drawable.ice_crystal_8kg else R.drawable.ice_crystal_5kg
-                        ProductCard(
-                            name = prod.name,
-                            stock = "Stok: ${prod.availableStock} ${prod.unitName}",
-                            price = "Rp${String.format("%,d", prod.unitPrice).replace(',', '.')}",
-                            imageRes = imgRes,
-                            onOrderClick = { onOrderClick(weightKg) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
+            } else if (error != null) {
+                Text(error!!)
+                Button(onClick = { refresh++ }) { Text("Coba lagi") }
+            } else if (products.isEmpty()) {
+                Text("Belum ada produk tersedia.")
+                Button(onClick = { refresh++ }) { Text("Muat ulang") }
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                products.forEach { prod ->
                     ProductCard(
-                        name = "Es Kristal 5 Kg",
-                        stock = "Stok: 25 karung",
-                        price = "Rp15.000",
-                        imageRes = R.drawable.ice_crystal_5kg,
-                        onOrderClick = { onOrderClick(5) },
-                        modifier = Modifier.weight(1f)
+                        name = "${prod.name} (${prod.packageWeightGrams} g)",
+                        stock = "Stok: ${prod.availableStock} ${prod.unitName}",
+                        price = "Rp${String.format("%,d", prod.unitPrice).replace(',', '.')}",
+                        imageRes = if (prod.packageWeightGrams == 8000) R.drawable.ice_crystal_8kg else R.drawable.ice_crystal_5kg,
+                        onOrderClick = { onOrderClick(prod) },
+                        available = prod.availableStock > 0,
+                        modifier = Modifier.fillMaxWidth()
                     )
-
-                    ProductCard(
-                        name = "Es Kristal 8 Kg",
-                        stock = "Stok: 15 karung",
-                        price = "Rp22.000",
-                        imageRes = R.drawable.ice_crystal_8kg,
-                        onOrderClick = { onOrderClick(8) },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Spacer(Modifier.height(16.dp))
                 }
             }
         }
@@ -217,6 +207,7 @@ private fun ProductCard(
     price: String,
     @DrawableRes imageRes: Int,
     onOrderClick: () -> Unit,
+    available: Boolean,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -268,6 +259,7 @@ private fun ProductCard(
 
             Button(
                 onClick = onOrderClick,
+                enabled = available,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp),

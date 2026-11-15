@@ -17,9 +17,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "API_BASE_URL", "\"https://megacrystal-web-api.gandhidhuta123123.workers.dev/\"")
     }
 
     buildTypes {
+        debug {
+            val apiUrl = providers.gradleProperty("megacrystalApiUrl").orNull
+            if (apiUrl != null) {
+                require(apiUrl.endsWith("/") && (apiUrl.startsWith("http://") || apiUrl.startsWith("https://"))) {
+                    "megacrystalApiUrl must be an HTTP(S) URL ending in /"
+                }
+                buildConfigField("String", "API_BASE_URL", "\"${apiUrl.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
+            }
+        }
         release {
             optimization {
                 enable = false
@@ -32,6 +42,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

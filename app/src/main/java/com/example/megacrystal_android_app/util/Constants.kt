@@ -1,5 +1,7 @@
 package com.example.megacrystal_android_app.util
 
+import com.example.megacrystal_android_app.BuildConfig
+
 object Constants {
-    const val BASE_URL = "https://megacrystal-web-api.gandhidhuta123123.workers.dev/"
+    const val BASE_URL = BuildConfig.API_BASE_URL
 }

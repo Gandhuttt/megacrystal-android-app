@@ -4,7 +4,9 @@
 > 
 > Aplikasi Mobile untuk Pemesanan Es Kristal Mandiri dengan Integrasi Pembayaran Digital (QRIS).
 
-![MegaCrystal Demo](demo-app.gif)
+[▶ Tonton video demo MegaCrystal (MP4)](demo-app.mp4)
+
+Video menampilkan katalog, pemesanan, checkout, riwayat, dan profil pelanggan. Rekaman berhenti sebelum membuat transaksi atau mengonfirmasi pembayaran QRIS.
 
 ---
 
