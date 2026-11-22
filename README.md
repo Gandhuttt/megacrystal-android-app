@@ -2,7 +2,7 @@
 
 > **Distribusi Lancar, Es Tetap Segar.**
 > 
-> Proyek Aplikasi Mobile Terintegrasi untuk Manajemen Pemesanan dan Pengiriman Es Kristal dengan Alur Pembayaran Digital **SIMULASI**.
+> Aplikasi Mobile untuk Pemesanan Es Kristal Mandiri dengan Integrasi Pembayaran Digital (QRIS).
 
 [▶ Tonton video demo MegaCrystal (MP4)](demo-app.mp4)
 
@@ -11,31 +11,31 @@ Video menampilkan katalog, pemesanan, checkout, riwayat, dan profil pelanggan. R
 ---
 
 ## 📌 Latar Belakang
-Bisnis distribusi es kristal memiliki tantangan unik: produk mudah mencair dan pelanggan (restoran, kafe, warung) membutuhkan pasokan yang cepat dan tepat. Selama ini, banyak distributor masih mengandalkan pencatatan manual via telepon atau aplikasi pesan instan. Sistem konvensional ini sering kali menyebabkan:
-- **Pesanan Terlewat/Salah Catat:** Akibat penumpukan pesan saat jam sibuk.
-- **Risiko *Fake Order* (Pesanan Fiktif):** Penggunaan sistem Cash on Delivery (COD) sering merugikan distributor ketika pesanan dibatalkan sepihak saat armada pengiriman sudah tiba di lokasi.
-- **Ketidakpastian Ketersediaan:** Pelanggan tidak mengetahui secara pasti apakah stok es di gudang sedang tersedia atau kosong.
+Bisnis distribusi es kristal memiliki tantangan unik: produk mudah mencair dan pelanggan (restoran, kafe, warung) membutuhkan pasokan yang cepat dan tepat. Selama ini, banyak pelanggan masih harus mengandalkan pencatatan manual via telepon atau pesan instan untuk melakukan pemesanan. Hal ini sering kali menyebabkan:
+- **Pesanan Terlewat/Salah Catat:** Akibat penumpukan antrean pesan saat jam sibuk.
+- **Ketidakpastian Ketersediaan:** Pelanggan tidak mengetahui secara pasti apakah stok es di gudang sedang tersedia atau kosong sebelum memesan.
+- **Risiko *Fake Order* (Pesanan Fiktif):** Penggunaan sistem bayar di tempat (COD) sering merugikan operasional bisnis ketika pesanan dibatalkan sepihak saat armada sudah berangkat.
 
-**MegaCrystal** hadir sebagai solusi digital untuk menghubungkan pelanggan langsung ke sistem gudang dan mempercepat respons pengiriman melalui dasbor khusus pekerja logistik. Alur pembayaran saat ini masih **SIMULASI**, bukan penerimaan dana QRIS sungguhan.
+**MegaCrystal** hadir sebagai aplikasi *mobile* yang memberdayakan pelanggan untuk mengecek stok secara transparan, memesan es kristal secara langsung, dan mewajibkan pembayaran di awal melalui QRIS guna memastikan kelancaran transaksi yang aman.
 
 ---
 
 ## 🎯 Tujuan Proyek
-1. Mengotomatisasi alur pemesanan es kristal agar prosesnya lebih cepat, transparan, dan terstruktur.
-2. Memodelkan alur pembayaran di awal transaksi untuk mengurangi risiko pesanan fiktif (*fake order*); pembayaran saat ini masih simulasi.
-3. Memfasilitasi pekerja gudang dengan antrean pesanan yang telah dikonfirmasi dalam alur pembayaran simulasi, sehingga proses persiapan dan pengiriman lebih terstruktur. Status ini bukan bukti uang telah masuk.
+1. Mengotomatisasi alur pemesanan es kristal agar pelanggan dapat bertransaksi dengan lebih cepat, transparan, dan mandiri melalui perangkat *smartphone*.
+2. Memberikan informasi ketersediaan stok aktual (*real-time*) kepada pelanggan sebelum mereka melakukan transaksi pemesanan.
+3. Mengeliminasi kerugian finansial akibat pesanan fiktif (*fake order*) dengan menerapkan sistem pembayaran wajib via QRIS secara penuh.
 
 ---
 
 ## ✨ Fitur Utama
 
-Aplikasi MegaCrystal menyediakan antarmuka Android untuk **pelanggan** dan **pekerja gudang**. Akun **admin** diarahkan menggunakan dashboard web untuk pengelolaan, bukan dashboard admin di Android.
+Aplikasi MegaCrystal dirancang khusus untuk memfasilitasi kebutuhan pelanggan (Customer) dengan fitur-fitur interaktif berikut:
 
 Nama pada launcher adalah **MegaCrystal**. Ikon menggunakan gambar logo kristal yang diberikan pengguna, bukan ikon Android bawaan. Resource mencakup ikon normal dan bulat pada lima densitas, foreground adaptive berlatarkan putih, serta silhouette monochrome untuk themed icons.
 
 ### 👤 Role Pelanggan (Customer)
 - **Katalog & Pemesanan:** Katalog diambil dari backend, termasuk ID produk, harga, dan stok. Pemesanan memakai ID produk yang dipilih dari katalog tersebut, bukan ID atau harga contoh yang ditanam di aplikasi; backend memvalidasi pesanan dan ketersediaan stok.
-- **Checkout & Pembayaran:** Menampilkan rincian pesanan dan total dari backend, bukan total contoh. Setelah pesanan dibuat, aplikasi menampilkan kode QR pembayaran beserta nominal dan hitung mundur dari server. Bergantung konfigurasi backend, kode itu berupa QRIS EMVCo dari Midtrans atau payload simulasi.
+- **Checkout & Pembayaran:** Menampilkan rincian pesanan dan total dari backend, bukan total contoh. Setelah pesanan dibuat, aplikasi menampilkan kode QR pembayaran beserta nominal dan hitung mundur dari server. Bergantung konfigurasi backend, kode itu berupa QRIS EMVCo dari Midtrans, Virtual Account BCA, atau payload simulasi.
 - **Riwayat Transaksi:** Mengambil riwayat dan status pesanan dari backend agar pelanggan dapat melihat perkembangan pengiriman.
 - **Manajemen Profil:** Perubahan profil dan password disimpan melalui API backend, bukan hanya di tampilan atau sesi lokal.
 - **Data Kosong & Kegagalan API:** Layar menampilkan keadaan kosong atau pesan kesalahan yang sebenarnya; tidak menggantinya dengan katalog, pesanan, atau profil demo saat backend gagal.
@@ -50,6 +50,8 @@ Nama pada launcher adalah **MegaCrystal**. Ikon menggunakan gambar logo kristal 
 Pembayaran dapat berjalan dalam dua mode, ditentukan oleh konfigurasi backend.
 
 **QRIS (Midtrans).** Bila backend memiliki `MIDTRANS_SERVER_KEY`, aplikasi menampilkan `qr_string` EMVCo sungguhan dari penyedia sehingga dapat dipindai aplikasi pembayaran mana pun. Status lunas hanya berubah setelah backend menerima notifikasi penyedia dan memverifikasi `signature_key` serta kecocokan nominal; aplikasi tidak punya tombol untuk menandai pesanan lunas. Repo ini memakai kredensial **sandbox**, sehingga tidak ada dana nyata yang berpindah. Penerimaan dana produksi memerlukan akun merchant, KYC, dan MDR.
+
+**Virtual Account BCA (Midtrans).** Alternatif QRIS: saat checkout pelanggan memilih metode Virtual Account BCA, aplikasi menampilkan nomor VA dari respons backend. Settlement tetap melalui notifikasi Midtrans yang sama; pesanan pending juga dapat dibatalkan pelanggan lewat tombol Batalkan, dan reservasi stok langsung dilepas.
 
 **Simulasi.** Tanpa server key, layar menampilkan payload simulasi (`megacrystal://payments/confirm?token=…`) dan tombol konfirmasi yang memanggil endpoint simulasi. Kode itu tidak dapat dibayar dan tidak boleh dipakai sebagai bukti pelunasan.
 
@@ -105,6 +107,17 @@ Build Android `assembleDebug` berhasil, dengan peringatan deprecation yang sudah
 ---
 
 ## 🎨 Tautan Desain (Figma)
-Rancangan antarmuka pengguna (UI/UX) aplikasi ini disusun dengan mematuhi pedoman antarmuka Google Material 3 (M3). Anda dapat menjelajahi desainnya melalui tautan berikut:
+Rancangan antarmuka pengguna (UI/UX) aplikasi ini disusun dengan mematuhi pedoman antarmuka Google Material 3 (M3). Anda dapat menjelajahi purwarupa (*prototype*) interaktifnya melalui tautan berikut:
 👉 **[Figma Design: MegaCrystal](https://www.figma.com/design/v0F4guamuBNHOmDGs5JoW7/Design-MegaCrystal?node-id=0-1&t=XQLObxiNuyWAE8Ol-1)**
 
+---
+
+## 👥 Identitas Tim Pengembang
+Proyek ini disusun dan dikembangkan oleh **Kelompok 4** untuk memenuhi tugas mata kuliah **Pemrograman Mobile B**:
+
+| Nama Lengkap | NIM | Peran Utama |
+| :--- | :--- | :--- |
+| Ahmad Fikri Zakaria | H1D024062 | Frontend Developer |
+| Muhammad Faqih Muhyiddin | H1D024068 | API Integration |
+| Gandhi Dhuta Nirvana | H1D024071 | Backend Developer |
+| Nalendra Wicaksana | H1D024073 | UI/UX Designer |
