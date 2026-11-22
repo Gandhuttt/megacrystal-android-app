@@ -2,6 +2,7 @@ package com.example.megacrystal_android_app.ui.screen
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -79,6 +80,7 @@ fun CustomerCheckoutScreen(
     var shippingAddress by rememberSaveable { mutableStateOf("") }
     var customerNote by rememberSaveable { mutableStateOf("") }
     var isLoading by rememberSaveable { mutableStateOf(false) }
+    var paymentMethod by rememberSaveable { mutableStateOf("qris") }
 
     val unitPrice = product.unitPrice
     val subtotal = quantity.toLong() * unitPrice
@@ -207,7 +209,29 @@ fun CustomerCheckoutScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "SIMULASI pembayaran, bukan QRIS bank. Total final dan waktu kedaluwarsa berasal dari server.",
+                text = "Metode Pembayaran",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF1D1B20)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            PaymentMethodOption(
+                title = "QRIS",
+                subtitle = "Pindai kode QR dengan aplikasi pembayaran (Midtrans)",
+                selected = paymentMethod == "qris",
+                onClick = { paymentMethod = "qris" }
+            )
+            PaymentMethodOption(
+                title = "Virtual Account BCA",
+                subtitle = "Transfer ke nomor Virtual Account (Midtrans)",
+                selected = paymentMethod == "bank_transfer",
+                onClick = { paymentMethod = "bank_transfer" }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "SIMULASI pembayaran via Midtrans Sandbox. Total final dan waktu kedaluwarsa berasal dari server.",
                 fontSize = 12.sp,
                 lineHeight = 18.sp,
                 color = Color(0xFF49454F)
@@ -240,7 +264,8 @@ fun CustomerCheckoutScreen(
                                     recipientName = recipientName.trim(),
                                     recipientPhone = recipientPhone.trim(),
                                     shippingAddress = shippingAddress.trim(),
-                                    customerNote = customerNote.trim().takeIf { it.isNotEmpty() }
+                                    customerNote = customerNote.trim().takeIf { it.isNotEmpty() },
+                                    paymentMethod = paymentMethod
                                 )
                             )
                             isLoading = false
@@ -262,7 +287,7 @@ fun CustomerCheckoutScreen(
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Buat pesanan • SIMULASI")
+                    Text(if (paymentMethod == "bank_transfer") "Buat pesanan • Virtual Account" else "Buat pesanan • QRIS")
                 }
             }
         }
@@ -290,5 +315,33 @@ private fun CheckoutRow(
             fontWeight = if (isTotal) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isTotal) CheckoutBlue else Color(0xFF1D1B20)
         )
+    }
+}
+
+@Composable
+private fun PaymentMethodOption(
+    title: String,
+    subtitle: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) Color(0xFFECF3FF) else Color.White,
+            contentColor = Color(0xFF1D1B20)
+        ),
+        border = if (selected) BorderStroke(2.dp, CheckoutBlue) else BorderStroke(1.dp, Color(0xFFCAC4D0)),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = subtitle, fontSize = 12.sp, lineHeight = 17.sp, color = Color(0xFF49454F))
+        }
     }
 }

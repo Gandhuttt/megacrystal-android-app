@@ -81,10 +81,12 @@ fun CustomerQrisScanScreen(
     }
     var isConfirming by remember(paymentToken, expiresAt) { mutableStateOf(false) }
     var completed by remember(paymentToken, expiresAt) { mutableStateOf(false) }
-    var error by remember(paymentToken, expiresAt) { mutableStateOf<String?>(null) }
     var secondsLeft by remember(paymentToken, expiresAt) { mutableLongStateOf(0L) }
+    var error by remember(paymentToken, expiresAt) { mutableStateOf<String?>(null) }
+    var isCancelling by remember(paymentToken, expiresAt) { mutableStateOf(false) }
     val currentOnExpired by rememberUpdatedState(onExpired)
     val currentOnConfirmed by rememberUpdatedState(onPaymentConfirmed)
+    val currentOnCancel by rememberUpdatedState(onCancelClick)
 
     val qrImage: ImageBitmap? = remember(qrPayload) {
         qrPayload
@@ -323,8 +325,33 @@ fun CustomerQrisScanScreen(
                 }
                 Spacer(Modifier.height(12.dp))
             }
-            OutlinedButton(onClick = onCancelClick, modifier = Modifier.fillMaxWidth()) {
-                Text("Batalkan", color = QrisBlue)
+            OutlinedButton(
+                onClick = {
+                    val userToken = sessionManager.getToken()
+                    if (userToken.isNullOrBlank()) {
+                        currentOnCancel()
+                        return@OutlinedButton
+                    }
+                    isCancelling = true
+                    scope.launch {
+                        try {
+                            MegaCrystalApiClient.instance.cancelOrder(
+                                authorization = "Bearer $userToken",
+                                orderNumber = orderNumber
+                            )
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            // Pembatalan server gagal; pesanan tetap auto-expire dan stok terlepas.
+                        }
+                        isCancelling = false
+                        currentOnCancel()
+                    }
+                },
+                enabled = !isCancelling,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isCancelling) "Membatalkan…" else "Batalkan", color = QrisBlue)
             }
         }
     }
@@ -348,7 +375,7 @@ private fun BitMatrix.toImageBitmap(): ImageBitmap {
     return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888).asImageBitmap()
 }
 
-private fun parsePaymentExpiry(value: String): Long? {
+internal fun parsePaymentExpiry(value: String): Long? {
     for (pattern in arrayOf("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", "yyyy-MM-dd'T'HH:mm:ssXXX")) {
         val formatter = SimpleDateFormat(pattern, Locale.US).apply {
             isLenient = false

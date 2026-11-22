@@ -4,5 +4,6 @@ data class OrderPayment(
     val method: String,
     val token: String?,
     val qrPayload: String?,
+    val vaNumber: String?,
     val expiresAt: String?
 ) : java.io.Serializable
