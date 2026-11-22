@@ -117,7 +117,5 @@ Proyek ini disusun dan dikembangkan oleh **Kelompok 4** untuk memenuhi tugas mat
 
 | Nama Lengkap | NIM | Peran Utama |
 | :--- | :--- | :--- |
-| Ahmad Fikri Zakaria | H1D024062 | Frontend Developer |
-| Muhammad Faqih Muhyiddin | H1D024068 | API Integration |
 | Gandhi Dhuta Nirvana | H1D024071 | Backend Developer |
 | Nalendra Wicaksana | H1D024073 | UI/UX Designer |
