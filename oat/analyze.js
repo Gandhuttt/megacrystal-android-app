@@ -12,7 +12,9 @@ const lines = fs.readFileSync(path, "utf8").split("\n");
 const header = lines[0].split(",");
 const idx = Object.fromEntries(header.map((h, i) => [h, i]));
 for (const line of lines.slice(1)) {
-  if (!line) continue;
+  // Baris data CSV JMeter selalu diawali timeStamp (13 digit); baris lanjutan
+  // assertion (failed message multiline) diabaikan.
+  if (!/^17\d{11},/.test(line)) continue;
   // CSV sederhana: pecah di koma di luar tanda kutip (label boleh memuat koma dalam kutip).
   const c = [];
   let cur = "", inQ = false;
@@ -27,7 +29,7 @@ for (const line of lines.slice(1)) {
   const ok = c[idx.success] === "true";
   const el = parseInt(c[idx.elapsed], 10);
   bump(total, label);
-  if (ok) { bump(okn, label); (lat.get(label) ?? lat.set(label, []).get(label)).push(el); }
+  if (ok) { bump(okn, label); if (!lat.has(label)) lat.set(label, []); lat.get(label).push(el); }
   else { bump(errn, label); bump(errcode.get(label) ?? errcode.set(label, new Map()).get(label), code); }
 }
 

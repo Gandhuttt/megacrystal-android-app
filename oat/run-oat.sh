@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# OAT runner: jalankan 3 skenario JMeter berurutan (read, login, transaksi order+cancel).
-# DNS workers.dev pada jaringan XL Axiata merespons salah (blockpage), sehingga
-# semua akses memakai --resolve? Tidak: JMeter memakai override DNS di .jmx
-# (HTTP Request > Advanced > hosts) — di CLI kita set property -Jcfip agar mudah diganti.
+# OAT runner: jalankan 4 skenario JMeter berurutan (katalog, login, order+cancel, soak).
+# DNS workers.dev pada jaringan uji merespons salah (blockpage), sehingga semua akses
+# memakai override DNS di .jmx; IP edge bisa diganti lewat env CFIP.
+# PENTING: naikkan stok produk uji sebelum menjalankan skenario 03 (lihat README).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -14,23 +14,36 @@ RESULTS="results"
 mkdir -p "$RESULTS"
 
 run() {
-  local name="$1"; shift
+  local name="$1" tg="$2"; shift 2
   echo "=== ${name} ==="
-  "$JMETER" -n -t "$PLAN" -l "$RESULTS/${name}.jtl" \
+  # Isolasi skenario: hanya thread group target yang aktif di salinan plan,
+  # agar variabel (accessToken/orderNumber) tidak tercampur antar skenario.
+  local tmp="${PLAN}.tmp"
+  cp "$PLAN" "$tmp"
+  for g in "01 Katalog Public Load" "02 Login Repeated" "03 Order Cancel Transaction" "04 Soak Mixed"; do
+    if [[ "$g" != "$tg" ]]; then
+      sed -i "s|testname=\"$g\" enabled=\"true\"|testname=\"$g\" enabled=\"false\"|" "$tmp"
+    fi
+  done
+  "$JMETER" -n -t "$tmp" -l "$RESULTS/${name}.jtl" \
     -Jjmeter.save.saveservice.output_format=csv \
     -Jsenario="${name}" -Jhost="${HOST}" -Jcfip="${CFIP}" "$@"
+  rm -f "$tmp"
 }
 
 # 1) Katalog publik: 50 users, ramp 30s, durasi 300s
-run oat01-katalog -Jthreads=50 -Jramp=30 -Jduration=300 -Jloops=0
+run oat01-katalog "01 Katalog Public Load" -Jthreads=50 -Jramp=30 -Jduration=300 -Jloops=0
 
-# 2) Login berulang: 30 users, ramp 20s, 200 loop (cap 60s)
-run oat02-login -Jthreads=30 -Jramp=20 -Jduration=60 -Jloops=200
+# 2) Login berulang: 10 users CSV, ramp 20s, 30 loop (cap 60s) — beban wajar
+#    untuk akun Cloudflare gratis (30 thread menghasilkan 500/503 edge saturation).
+run oat02-login "02 Login Repeated" -Jthreads=10 -Jramp=20 -Jduration=60 -Jloops=30
 
-# 3) Order+cancel transaksi: 10 users CSV, ramp 20s, 60 loop (cap 180s)
-run oat03-ordercancel -Jthreads=10 -Jramp=20 -Jduration=180 -Jloops=60
+# 3) Order+cancel transaksi: 10 users CSV, ramp 20s, 30 loop (cap 180s).
+#    Setiap iterasi: login -> order (201) -> cancel (200), stok kembali lagi.
+run oat03-ordercancel "03 Order Cancel Transaction" -Jthreads=10 -Jramp=20 -Jduration=180 -Jloops=30
 
 # 4) Soak ringan campuran: 15 users, ramp 30s, durasi 600s
-run oat04-soak -Jthreads=15 -Jramp=30 -Jduration=600 -Jloops=0
+run oat04-soak "04 Soak Mixed" -Jthreads=15 -Jramp=30 -Jduration=600 -Jloops=0
+
 
 echo "Selesai. Hasil di $RESULTS/*.jtl"
