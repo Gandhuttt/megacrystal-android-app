@@ -5,5 +5,6 @@ data class CreateOrderRequest(
     val recipientName: String,
     val recipientPhone: String,
     val shippingAddress: String,
-    val customerNote: String? = null
+    val customerNote: String? = null,
+    val paymentMethod: String = "qris"
 )

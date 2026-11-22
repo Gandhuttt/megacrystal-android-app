@@ -48,6 +48,12 @@ interface MegaCrystalApiInterface {
         @Header("Authorization") authorization: String
     ): OrdersResponse
 
+    @POST("api/orders/{orderNumber}/cancel")
+    suspend fun cancelOrder(
+        @Header("Authorization") authorization: String,
+        @Path("orderNumber") orderNumber: String
+    ): Map<String, Any>
+
     @POST("api/payments/confirm")
     suspend fun confirmPayment(
         @Header("Authorization") authorization: String,

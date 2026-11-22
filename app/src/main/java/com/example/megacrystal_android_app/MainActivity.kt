@@ -26,12 +26,13 @@ import com.example.megacrystal_android_app.ui.screen.CustomerOrderScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerPaymentSuccessScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerProfileScreen
 import com.example.megacrystal_android_app.ui.screen.CustomerQrisScanScreen
+import com.example.megacrystal_android_app.ui.screen.CustomerVaScreen
 import com.example.megacrystal_android_app.ui.screen.WorkerDashboardScreen
 import com.example.megacrystal_android_app.ui.screen.WorkerDetailScreen
 import com.example.megacrystal_android_app.ui.theme.MegacrystalandroidappTheme
 import com.example.megacrystal_android_app.util.SessionManager
 
-class MainActivity : ComponentActivity() {
+class   MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -130,10 +131,32 @@ class MainActivity : ComponentActivity() {
                     )
                 } else if (activeOrder != null) {
                     val order = activeOrder!!
-                    Column {
-                        Text("Pesanan ${order.orderNumber}", modifier = Modifier.padding(top = 32.dp, start = 20.dp))
-                        Text("Subtotal Rp${order.subtotalAmount} • Ongkir Rp${order.deliveryFee} • Total Rp${order.totalAmount}", modifier = Modifier.padding(horizontal = 20.dp))
+                    if (order.payment.method == "bank_transfer") {
+                        CustomerVaScreen(
+                            orderNumber = order.orderNumber,
+                            totalAmount = order.totalAmount,
+                            vaNumber = order.payment.vaNumber,
+                            bank = "bca",
+                            expiresAt = order.payment.expiresAt,
+                            onPaymentConfirmed = { paymentResult = "success" },
+                            onCancelClick = {
+                                activeOrder = null
+                                checkoutQuantity = null
+                                selectedProduct = null
+                                showHistory = true
+                            },
+                            onExpired = {
+                                activeOrder = null
+                                checkoutQuantity = null
+                                selectedProduct = null
+                                showHistory = true
+                            }
+                        )
+                    } else {
                         CustomerQrisScanScreen(
+                            orderNumber = order.orderNumber,
+                            totalAmount = order.totalAmount,
+                            qrPayload = order.payment.qrPayload,
                             paymentToken = order.payment.token,
                             expiresAt = order.payment.expiresAt,
                             onPaymentConfirmed = { paymentResult = "success" },
