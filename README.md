@@ -35,19 +35,25 @@ Nama pada launcher adalah **MegaCrystal**. Ikon menggunakan gambar logo kristal 
 
 ### 👤 Role Pelanggan (Customer)
 - **Katalog & Pemesanan:** Katalog diambil dari backend, termasuk ID produk, harga, dan stok. Pemesanan memakai ID produk yang dipilih dari katalog tersebut, bukan ID atau harga contoh yang ditanam di aplikasi; backend memvalidasi pesanan dan ketersediaan stok.
-- **Checkout:** Menampilkan rincian pesanan dan total dari backend, bukan total contoh. Alur konfirmasi pembayaran yang tersedia adalah **SIMULASI**.
+- **Checkout & Pembayaran:** Menampilkan rincian pesanan dan total dari backend, bukan total contoh. Setelah pesanan dibuat, aplikasi menampilkan kode QR pembayaran beserta nominal dan hitung mundur dari server. Bergantung konfigurasi backend, kode itu berupa QRIS EMVCo dari Midtrans atau payload simulasi.
 - **Riwayat Transaksi:** Mengambil riwayat dan status pesanan dari backend agar pelanggan dapat melihat perkembangan pengiriman.
 - **Manajemen Profil:** Perubahan profil dan password disimpan melalui API backend, bukan hanya di tampilan atau sesi lokal.
 - **Data Kosong & Kegagalan API:** Layar menampilkan keadaan kosong atau pesan kesalahan yang sebenarnya; tidak menggantinya dengan katalog, pesanan, atau profil demo saat backend gagal.
 
 ### 👷 Role Pekerja Gudang (Worker)
-- **Antrean Pengiriman:** Mengambil antrean pesanan yang telah dikonfirmasi dalam alur pembayaran **SIMULASI**. Label pembayaran/status pesanan tidak membuktikan penerimaan dana.
+- **Antrean Pengiriman:** Mengambil antrean pesanan berstatus lunas. Pada mode QRIS, status lunas berasal dari notifikasi penyedia yang signature-nya terverifikasi backend; pada mode simulasi status itu hanya hasil konfirmasi pelanggan.
 - **Ambil Pesanan (*Claim*):** Pekerja mengambil pesanan dari antrean untuk ditugaskan ke akunnya; backend mengatur kepemilikan tugas agar satu pesanan tidak diambil dua pekerja.
 - **Detail Pesanan:** Melihat rincian pesanan dan tujuan pengiriman dari backend.
 - **Pembaruan Status Logistik:** Memproses tugas milik pekerja melalui alur `assigned` → `shipped` → `delivered` (ambil → kirim → selesai).
 
 ### Batasan Pembayaran
-Belum ada integrasi provider QRIS nyata atau kredensial pembayaran produksi. Konfirmasi pembayaran saat ini hanya **SIMULASI**: tidak menampilkan QRIS untuk dipindai, tidak menghasilkan Dynamic QRIS produksi, tidak memverifikasi dana masuk, dan tidak boleh dipakai sebagai bukti pelunasan. Pembayaran nyata memerlukan provider QRIS, kredensial yang sah, serta integrasi dan verifikasi notifikasi pembayaran dari provider di backend.
+Pembayaran dapat berjalan dalam dua mode, ditentukan oleh konfigurasi backend.
+
+**QRIS (Midtrans).** Bila backend memiliki `MIDTRANS_SERVER_KEY`, aplikasi menampilkan `qr_string` EMVCo sungguhan dari penyedia sehingga dapat dipindai aplikasi pembayaran mana pun. Status lunas hanya berubah setelah backend menerima notifikasi penyedia dan memverifikasi `signature_key` serta kecocokan nominal; aplikasi tidak punya tombol untuk menandai pesanan lunas. Repo ini memakai kredensial **sandbox**, sehingga tidak ada dana nyata yang berpindah. Penerimaan dana produksi memerlukan akun merchant, KYC, dan MDR.
+
+**Simulasi.** Tanpa server key, layar menampilkan payload simulasi (`megacrystal://payments/confirm?token=…`) dan tombol konfirmasi yang memanggil endpoint simulasi. Kode itu tidak dapat dibayar dan tidak boleh dipakai sebagai bukti pelunasan.
+
+Pada kedua mode, aplikasi memeriksa status pesanan ke server setiap tiga detik, sehingga perubahan status dari notifikasi penyedia muncul tanpa interaksi tambahan.
 
 ---
 
@@ -55,10 +61,10 @@ Belum ada integrasi provider QRIS nyata atau kredensial pembayaran produksi. Kon
 
 Backend harus tersedia secara lokal atau sudah dideploy dengan migrasi terkini serta API profil/password dan API pekerja yang digunakan aplikasi. Backend lama yang belum diperbarui tidak cukup untuk menjalankan alur tersebut.
 
-Dari direktori `megacrystal-android-app`, buat APK debug untuk emulator Android dengan backend lokal di port `8787`:
+Dari direktori `megacrystal-android-app`, buat APK debug untuk emulator Android dengan backend lokal di port `5173`:
 
 ```sh
-./gradlew :app:assembleDebug -PmegacrystalApiUrl=http://10.0.2.2:8787/
+./gradlew :app:assembleDebug -PmegacrystalApiUrl=http://10.0.2.2:5173/
 ```
 
 Alamat `10.0.2.2` mengarah ke host dari emulator Android. Properti `megacrystalApiUrl` tersebut hanya berlaku untuk build **debug**; konfigurasi HTTPS pada build **release** tetap tidak berubah. Manifest khusus debug mengizinkan HTTP (*cleartext*) untuk API lokal, sedangkan izin tersebut tidak ikut masuk ke manifest release.
@@ -74,11 +80,24 @@ Langkah ini khusus pengembangan dengan API lokal; API Android yang lebih rendah 
 Alternatif melalui koneksi loopback yang dipakai pada verifikasi emulator:
 
 ```sh
-adb reverse tcp:8787 tcp:8787
-./gradlew :app:assembleDebug -PmegacrystalApiUrl=http://127.0.0.1:8787/
+adb reverse tcp:5173 tcp:5173
+./gradlew :app:assembleDebug -PmegacrystalApiUrl=http://127.0.0.1:5173/
 ```
 
 Pasang APK hasil build tersebut sebelum menjalankan aplikasi. Port reverse ini hanya tersedia selama koneksi ADB aktif.
+
+### Lingkungan NixOS
+
+Repo menyertakan `shell.nix` untuk mesin NixOS, tempat binary glibc dari SDK (mis. `aapt2`) tidak dapat dijalankan langsung:
+
+```sh
+nix-shell
+mg-build    # setara ./gradlew :app:assembleDebug dengan aapt2 yang sudah di-patch
+mg-test     # unit test
+mg-install  # adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Shell menyediakan JDK 25 (sesuai `gradle/gradle-daemon-jvm.properties`), `patchelf`, dan `adb` dari nixpkgs. `mg-build` mem-patch `aapt2` dari cache Gradle ke `.nix-aapt2/aapt2` lalu meneruskannya lewat `-Pandroid.aapt2FromMavenOverride`. Karena `aapt2` baru ada setelah Gradle mengunduhnya, jalankan `mg-build` sekali dan biarkan ia mengulang build setelah patch otomatis. Emulator SDK tetap memerlukan `programs.nix-ld.enable = true`; `adb` tidak.
 
 ### Cakupan Verifikasi
 Build Android `assembleDebug` berhasil, dengan peringatan deprecation yang sudah ada. Smoke test backend D1 lokal terisolasi mencakup autentikasi/peran, persistensi profil/password, katalog, pembayaran simulasi, serta claim dan transisi pengiriman. Verifikasi emulator mencakup katalog produk 7 kg yang dibuat melalui dasbor, checkout dengan total server, kegagalan konfirmasi yang tetap gagal, pembayaran simulasi berhasil, profil tersimpan ke server, riwayat, serta pekerja mengambil, mengirim, dan menyelesaikan pesanan. Kegagalan pengiriman juga diuji tanpa memajukan status. Ini bukan deployment produksi atau pengujian QRIS nyata. Video di atas tetap hanya menunjukkan alur yang dijelaskan pada keterangannya.
